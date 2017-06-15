@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from sqlalchemy import create_engine, MetaData, Table, Column
+from sqlalchemy import String, Integer, Float
+
+engine = create_engine("sqlite:///:memory:")
+metadata = MetaData()
+
+t_smart_insert = Table(
+    "smart_insert", metadata,
+    Column("id", Integer, primary_key=True),
+)
+
+t_user = Table(
+    "user", metadata,
+    Column("user_id", Integer, primary_key=True),
+    Column("name", String),
+)
+
+t_inv = Table(
+    "inventory", metadata,
+    Column("store_id", Integer, primary_key=True),
+    Column("item_id", Integer, primary_key=True),
+)
+
+metadata.create_all(engine)
+
+
+def insert_t_user():
+    engine.execute(t_user.delete())
+
+    data = [{"user_id": 1, "name": "Jack"},
+            {"user_id": 2, "name": "Mike"},
+            {"user_id": 3, "name": "Paul"}]
+    engine.execute(t_user.insert(), data)
+
+
+insert_t_user()
+
+
+def insert_t_inv():
+    data = [{"store_id": 1, "item_id": 1},
+            {"store_id": 1, "item_id": 2},
+            {"store_id": 2, "item_id": 1},
+            {"store_id": 2, "item_id": 2}]
+    engine.execute(t_inv.insert(), data)
+
+
+insert_t_inv()
