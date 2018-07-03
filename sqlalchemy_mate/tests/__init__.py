@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 from sqlalchemy import create_engine, MetaData, Table, Column
-from sqlalchemy import String, Integer, Float
+from sqlalchemy import String, Integer
+from sqlalchemy.ext.declarative import declarative_base
+
 
 engine = create_engine("sqlite:///:memory:")
 metadata = MetaData()
@@ -48,3 +50,18 @@ def insert_t_inv():
 
 
 insert_t_inv()
+
+
+Base = declarative_base()
+
+
+class User(Base):
+    __tablename__ = "user"
+    user_id = Column(Integer, primary_key=True)
+    name = Column(String)
+
+
+class Inventory(Base):
+    __tablename__ = "inventory"
+    store_id = Column(Integer, primary_key=True)
+    item_id = Column(Integer, primary_key=True)

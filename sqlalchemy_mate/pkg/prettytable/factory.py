@@ -4,6 +4,7 @@ Table factories
 import csv
 from .prettytable import PrettyTable
 from ._compact import py3k, HTMLParser
+from ..sixmini import binary_type
 
 
 def from_csv(fp, field_names=None, **kwargs):
@@ -34,10 +35,16 @@ def from_csv(fp, field_names=None, **kwargs):
     return table
 
 
+def ensure_str(v):
+    if isinstance(v, binary_type):
+        v = v.decode("utf-8")
+    return v
+
+
 def from_db_cursor(cursor, **kwargs):
     if cursor.description:
         table = PrettyTable(**kwargs)
-        table.field_names = [col[0] for col in cursor.description]
+        table.field_names = [ensure_str(col[0]) for col in cursor.description]
         for row in cursor.fetchall():
             table.add_row(row)
         return table

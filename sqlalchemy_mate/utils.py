@@ -33,3 +33,38 @@ def grouper_list(l, n):
             counter = 0
     if len(chunk) > 0:
         yield chunk
+
+
+def convert_query_to_sql_statement(query):
+    """
+    Convert a Query object created from orm query, into executable sql statement.
+
+    :param query: :class:`sqlalchemy.orm.Query`
+
+    :return: :class:`sqlalchemy.sql.selectable.Select`
+    """
+    context = query._compile_context()
+    context.statement.use_labels = True
+    return context.statement
+
+
+def execute_query_return_result_proxy(query):
+    """
+    Execute a query, yield result proxy.
+
+    :param query: :class:`sqlalchemy.orm.Query`,
+        has to be created from ``session.query(Object)``
+
+    :return: :class:`sqlalchemy.engine.result.ResultProxy`
+    """
+    context = query._compile_context()
+    context.statement.use_labels = True
+    if query._autoflush and not query._populate_existing:
+        query.session._autoflush()
+
+    conn = query._get_bind_args(
+        context,
+        query._connection_from_session,
+        close_with_result=True)
+
+    return conn.execute(context.statement, query._params)
