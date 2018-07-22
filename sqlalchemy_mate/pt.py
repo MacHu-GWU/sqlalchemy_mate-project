@@ -6,11 +6,17 @@ Pretty Table support.
 """
 
 from sqlalchemy import select, Table
-from sqlalchemy_mate.pkg.prettytable import from_db_cursor
 from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.sql.selectable import Select
-from .utils import execute_query_return_result_proxy
+from sqlalchemy.engine.result import ResultProxy
+
+try:
+    from .utils import execute_query_return_result_proxy
+    from .pkg.prettytable import from_db_cursor, PrettyTable
+except:  # pragma: no cover
+    from sqlalchemy_mate.utils import execute_query_return_result_proxy
+    from sqlalchemy_mate.pkg.prettytable import from_db_cursor, PrettyTable
 
 
 def from_sql(sql, engine, limit=None):
@@ -99,7 +105,33 @@ def from_object(orm_class, engine, limit=None):
     return from_db_cursor(result_proxy.cursor)
 
 
+def from_resultproxy(result_proxy):
+    """
+    Construct a Prettytable from ``ResultProxy``.
+
+    :param result_proxy: a ``sqlalchemy.engine.result.ResultProxy`` object.
+    """
+    return from_db_cursor(result_proxy.cursor)
+
+
+def from_data(data):
+    """
+    Construct a Prettytable from list of rows.
+    """
+    if len(data) == 0:  # pragma: no cover
+        return None
+    else:
+        ptable = PrettyTable()
+        ptable.field_names = data[0].keys()
+        for row in data:
+            ptable.add_row(row)
+        return ptable
+
+
 def from_everything(everything, engine, limit=None):
+    """
+    Construct a Prettytable from any kinds of sqlalchemy query.
+    """
     if isinstance(everything, Table):
         return from_table(everything, engine, limit=limit)
 
@@ -111,3 +143,9 @@ def from_everything(everything, engine, limit=None):
 
     if isinstance(everything, Select):
         return from_sql(everything, engine, limit=limit)
+
+    if isinstance(everything, ResultProxy):
+        return from_resultproxy(everything)
+
+    if isinstance(everything, list):
+        return from_data(everything)

@@ -19,11 +19,21 @@ def test_select_single_column():
 
 
 def test_select_many_column():
-    headers, data = selecting.select_many_column(engine, t_user.c.user_id)
+    # headers, data = selecting.select_many_column(engine, t_user.c.user_id)
+    # assert (headers, data) == (["user.user_id", ], [(1,), (2,), (3,)])
+
+    headers, data = selecting.select_many_column(engine, [t_user.c.user_id, ])
     assert (headers, data) == (["user.user_id", ], [(1,), (2,), (3,)])
 
     headers, data = selecting.select_many_column(
         engine, t_user.c.user_id, t_user.c.name)
+    assert (headers, data) == (
+        ["user.user_id", "user.name"],
+        [(1, "Alice"), (2, "Bob"), (3, "Cathy")],
+    )
+
+    headers, data = selecting.select_many_column(
+        engine, [t_user.c.user_id, t_user.c.name])
     assert (headers, data) == (
         ["user.user_id", "user.name"],
         [(1, "Alice"), (2, "Bob"), (3, "Cathy")],

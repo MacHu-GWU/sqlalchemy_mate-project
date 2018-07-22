@@ -5,6 +5,7 @@
 Utilities function.
 """
 
+
 def grouper_list(l, n):
     """Evenly divide list into fixed-length piece, no filled value if chunk
     size smaller than fixed-length.

@@ -5,7 +5,7 @@
 This module provide utility functions for select operation.
 """
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, Column
 
 try:
     from ..pkg.prettytable import from_db_cursor
@@ -16,6 +16,11 @@ except:  # pragma: no cover
 def count_row(engine, table):
     """
     Return number of rows in a table.
+
+    Example::
+
+        >>> count_row(engine, table_user)
+        3
 
     **中文文档**
 
@@ -28,6 +33,11 @@ def select_all(engine, table):
     """
     Select everything from a table.
 
+    Example::
+
+        >>> list(select_all(engine, table_user))
+        [(1, "Alice"), (2, "Bob"), (3, "Cathy")]
+
     **中文文档**
 
     选取所有数据。
@@ -37,13 +47,29 @@ def select_all(engine, table):
 
 
 def select_single_column(engine, column):
+    """
+    Select data from single column.
+
+    Example::
+
+        >>> select_single_column(engine, table_user.c.id)
+        [1, 2, 3]
+
+        >>> select_single_column(engine, table_user.c.name)
+        ["Alice", "Bob", "Cathy"]
+    """
     s = select([column])
     return column.name, [row[0] for row in engine.execute(s)]
 
 
 def select_many_column(engine, *columns):
     """
-    Select single or multiple columns.
+    Select data from multiple columns.
+
+    Example::
+
+        >>> select_many_column(engine, table_user.c.id, table_user.c.name)
+
 
     :param columns: list of sqlalchemy.Column instance
 
@@ -52,11 +78,12 @@ def select_many_column(engine, *columns):
 
     **中文文档**
 
-    - 在选择单列时, 返回的是 str, list
-    - 在选择多列时, 返回的是 str list, list of list
-
-    返回单列或多列的数据。
+    返回多列中的数据。
     """
+    if isinstance(columns[0], Column):
+        pass
+    elif isinstance(columns[0], (list, tuple)):
+        columns = columns[0]
     s = select(columns)
     headers = [str(column) for column in columns]
     data = [tuple(row) for row in engine.execute(s)]
@@ -73,6 +100,10 @@ def select_distinct_column(engine, *columns):
 
     distinct语句的语法糖函数。
     """
+    if isinstance(columns[0], Column):
+        pass
+    elif isinstance(columns[0], (list, tuple)):  # pragma: no cover
+        columns = columns[0]
     s = select(columns).distinct()
     if len(columns) == 1:
         return [row[0] for row in engine.execute(s)]

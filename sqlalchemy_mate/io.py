@@ -10,7 +10,8 @@ from sqlalchemy import select
 
 
 def sql_to_csv(sql, engine, filepath, chunksize=1000, overwrite=False):
-    """Export sql result to csv file.
+    """
+    Export sql result to csv file.
 
     :param sql: :class:`sqlalchemy.sql.selectable.Select` instance.
     :param engine: :class:`sqlalchemy.engine.base.Engine`.
@@ -47,7 +48,8 @@ def sql_to_csv(sql, engine, filepath, chunksize=1000, overwrite=False):
 
 
 def table_to_csv(table, engine, filepath, chunksize=1000, overwrite=False):
-    """Export entire table to a csv file.
+    """
+    Export entire table to a csv file.
 
     :param table: :class:`sqlalchemy.Table` instance.
     :param engine: :class:`sqlalchemy.engine.base.Engine`.

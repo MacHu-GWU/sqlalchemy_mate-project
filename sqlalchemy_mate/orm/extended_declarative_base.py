@@ -24,15 +24,33 @@ except:  # pragma: no cover
 class ExtendedBase(object):
     """
     Provide additional method.
+
+    Example::
+
+        from sqlalchemy.ext.declarative import declarative_base
+
+        Base = declarative_base()
+
+        class User(Base, ExtendedBase):
+            ... do what you do with sqlalchemy ORM
     """
 
     def keys(self):
+        """
+        return list of all declared columns.
+        """
         return [c.name for c in self.__table__._columns]
 
     def values(self):
+        """
+        return list of value of all declared columns.
+        """
         return [getattr(self, c.name, None) for c in self.__table__._columns]
 
     def items(self):
+        """
+        return list of pair of name and value of all declared columns.
+        """
         return [
             (c.name, getattr(self, c.name, None))
             for c in self.__table__._columns

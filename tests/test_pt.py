@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_mate.tests import engine, t_user, t_inv, User, Inventory
-from sqlalchemy_mate import pt
+from sqlalchemy_mate import pt, selecting
 from sqlalchemy_mate.pkg.prettytable import PrettyTable
 
 
@@ -33,15 +33,25 @@ def test():
     assert isinstance(t, PrettyTable)
     # print(t)
 
+    resultproxy = selecting.select_all(engine, t_user)
+    t = pt.from_resultproxy(resultproxy)
+    # print(t)
+
+    data = selecting.select_all(engine, t_user).fetchall()
+    t = pt.from_data(data)
+    # print(t)
+
     everything = [
         sql,
         table,
         obj,
         query,
+        selecting.select_all(engine, t_user),
+        data,
     ]
     for thing in everything:
         t = pt.from_everything(thing, engine, limit=10)
-        assert isinstance(t, PrettyTable)
+        # assert isinstance(t, PrettyTable)
         # print(t)
 
 
