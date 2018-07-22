@@ -32,11 +32,12 @@ Release and Version History
 
 **Miscellaneous**
 
-- improve testing coverage from 60% to 99%.
+- improve testing coverage from 60% to 100%.
 - add unittest for import.
+- add documentation site.
 
 
-0.0.3 (2018-07-03)
+0.0.2 (2018-07-03)
 ~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
 
