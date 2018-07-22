@@ -5,7 +5,6 @@ from sqlalchemy import create_engine, MetaData, Table, Column
 from sqlalchemy import String, Integer
 from sqlalchemy.ext.declarative import declarative_base
 
-
 engine = create_engine("sqlite:///:memory:")
 metadata = MetaData()
 
@@ -32,9 +31,9 @@ metadata.create_all(engine)
 def insert_t_user():
     engine.execute(t_user.delete())
 
-    data = [{"user_id": 1, "name": "Jack"},
-            {"user_id": 2, "name": "Mike"},
-            {"user_id": 3, "name": "Paul"}]
+    data = [{"user_id": 1, "name": "Alice"},
+            {"user_id": 2, "name": "Bob"},
+            {"user_id": 3, "name": "Cathy"}]
     engine.execute(t_user.insert(), data)
 
 
@@ -50,7 +49,6 @@ def insert_t_inv():
 
 
 insert_t_inv()
-
 
 Base = declarative_base()
 

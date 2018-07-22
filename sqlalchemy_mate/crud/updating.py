@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-
+This module provide utility functions for update operation.
 """
 
 from collections import OrderedDict
@@ -10,10 +10,13 @@ from sqlalchemy import and_
 
 
 def upsert_all(engine, table, data):
-    """Update data by primary key columns. If not able to update, do insert.
+    """
+    Update data by primary key columns. If not able to update, do insert.
 
     **中文文档**
 
+    批量更新文档. 如果该表格定义了Primary Key, 则用Primary Key约束where语句. 对于
+    where语句无法找到的行, 自动进行批量bulk insert.
     """
     ins = table.insert()
     upd = table.update()
@@ -54,7 +57,7 @@ def upsert_all(engine, table, data):
             if result.rowcount == 0:
                 data_to_insert.append(row)
 
-    else:
+    else:  # pragma: no cover
         data_to_insert = data
 
     # Insert rest of data

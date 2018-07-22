@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Utilities function.
+"""
 
 def grouper_list(l, n):
     """Evenly divide list into fixed-length piece, no filled value if chunk
@@ -44,7 +47,7 @@ def convert_query_to_sql_statement(query):
     :return: :class:`sqlalchemy.sql.selectable.Select`
     """
     context = query._compile_context()
-    context.statement.use_labels = True
+    context.statement.use_labels = False
     return context.statement
 
 
@@ -58,7 +61,7 @@ def execute_query_return_result_proxy(query):
     :return: :class:`sqlalchemy.engine.result.ResultProxy`
     """
     context = query._compile_context()
-    context.statement.use_labels = True
+    context.statement.use_labels = False
     if query._autoflush and not query._populate_existing:
         query.session._autoflush()
 

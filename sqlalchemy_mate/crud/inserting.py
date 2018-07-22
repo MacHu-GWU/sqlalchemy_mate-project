@@ -2,19 +2,21 @@
 # -*- coding: utf-8 -*-
 
 """
-
+This module provide utility functions for insert operation.
 """
 
 import math
 from sqlalchemy.exc import IntegrityError
 try:
     from ..utils import grouper_list
-except:
+except:  # pragma: no cover
     from sqlalchemy_mate.utils import grouper_list
 
 
 def smart_insert(engine, table, data, minimal_size=5):
-    """An optimized Insert strategy.
+    """
+    An optimized Insert strategy. Guarantee successful and highest insertion
+    speed. But ATOMIC WRITE IS NOT ENSURED IF THE PROGRAM IS INTERRUPTED.
 
     **中文文档**
 

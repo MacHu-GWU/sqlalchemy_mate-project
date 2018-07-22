@@ -2,20 +2,20 @@
 # -*- coding: utf-8 -*-
 
 """
-
+This module provide utility functions for select operation.
 """
 
-from collections import OrderedDict
-from sqlalchemy import select, func, distinct
+from sqlalchemy import select, func
 
 try:
     from ..pkg.prettytable import from_db_cursor
-except:
+except:  # pragma: no cover
     from sqlalchemy_mate.pkg.prettytable import from_db_cursor
 
 
 def count_row(engine, table):
-    """Return number of rows in a table.
+    """
+    Return number of rows in a table.
 
     **中文文档**
 
@@ -25,7 +25,8 @@ def count_row(engine, table):
 
 
 def select_all(engine, table):
-    """Select everything from a table.
+    """
+    Select everything from a table.
 
     **中文文档**
 
@@ -35,8 +36,14 @@ def select_all(engine, table):
     return engine.execute(s)
 
 
-def select_column(engine, *columns):
-    """Select single or multiple columns.
+def select_single_column(engine, column):
+    s = select([column])
+    return column.name, [row[0] for row in engine.execute(s)]
+
+
+def select_many_column(engine, *columns):
+    """
+    Select single or multiple columns.
 
     :param columns: list of sqlalchemy.Column instance
 
@@ -51,24 +58,14 @@ def select_column(engine, *columns):
     返回单列或多列的数据。
     """
     s = select(columns)
-    if len(columns) == 1:
-        c_name = columns[0].name
-        array = [row[0] for row in engine.execute(s)]
-        header, data = c_name, array
-        return header, data
-    else:
-        # from same table
-        if len({column.table.name for column in columns}) == 1:
-            headers = [column.name for column in columns]
-        else:
-            headers = [column.__str__() for column in columns]
-
-        data = [tuple(row) for row in engine.execute(s)]
-        return headers, data
+    headers = [str(column) for column in columns]
+    data = [tuple(row) for row in engine.execute(s)]
+    return headers, data
 
 
 def select_distinct_column(engine, *columns):
-    """Select distinct column(columns).
+    """
+    Select distinct column(columns).
 
     :returns: if single column, return list, if multiple column, return matrix.
 
@@ -78,7 +75,14 @@ def select_distinct_column(engine, *columns):
     """
     s = select(columns).distinct()
     if len(columns) == 1:
-        c_name = columns[0].name
-        return [row[c_name] for row in engine.execute(s)]
+        return [row[0] for row in engine.execute(s)]
     else:
-        return [[row[column.name] for column in columns] for row in engine.execute(s)]
+        return [tuple(row) for row in engine.execute(s)]
+
+
+def select_random(engine, table_or_columns, limit=5):
+    """
+    Randomly select some rows from table.
+    """
+    s = select(table_or_columns).order_by(func.random()).limit(limit)
+    return engine.execute(s).fetchall()
