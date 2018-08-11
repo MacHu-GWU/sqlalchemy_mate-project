@@ -14,11 +14,28 @@ from sqlalchemy.orm.session import Session
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import FlushError
+from sqlalchemy.inspection import inspect
 
 try:
-    from ..utils import grouper_list
+    from ..utils import ensure_list, grouper_list
+    from ..crud.updating import update_all
 except:  # pragma: no cover
-    from sqlalchemy_mate.utils import grouper_list
+    from sqlalchemy_mate.utils import ensure_list, grouper_list
+    from sqlalchemy_mate.crud.updating import update_all
+
+
+def ensure_session(engine_or_session):
+    """
+    If it is an engine, then create a session from it. And indicate that
+    this session should be closed after the job done.
+    """
+    if isinstance(engine_or_session, Engine):
+        ses = sessionmaker(bind=engine_or_session)()
+        auto_close = True
+    elif isinstance(engine_or_session, Session):
+        ses = engine_or_session
+        auto_close = False
+    return ses, auto_close
 
 
 class ExtendedBase(object):
@@ -34,6 +51,46 @@ class ExtendedBase(object):
         class User(Base, ExtendedBase):
             ... do what you do with sqlalchemy ORM
     """
+    _cache_pk_names = None
+    _cache_id_field_name = None
+
+    @classmethod
+    def _get_primary_key_names(cls):
+        return tuple([col.name for col in inspect(cls).primary_key])
+
+    @classmethod
+    def pk_names(cls):
+        """
+        Primary key column name list.
+        """
+        if cls._cache_pk_names is None:
+            cls._cache_pk_names = cls._get_primary_key_names()
+        return cls._cache_pk_names
+
+    def pk_values(self):
+        """
+        Primary key values
+        """
+        return tuple([getattr(self, name) for name in self.pk_names()])
+
+    @classmethod
+    def id_field_name(cls):
+        """
+        If only one primary_key, then return it. Otherwise, raise ValueError.
+        """
+        if cls._cache_id_field_name is None:
+            pk_names = cls.pk_names()
+            if len(pk_names) == 1:
+                cls._cache_id_field_name = pk_names[0]
+            else:  # pragma: no cover
+                raise ValueError(
+                    "{classname} has more than 1 primary key!"
+                    .format(classname=cls.__name__)
+                )
+        return cls._cache_id_field_name
+
+    def id_field_value(self):
+        return getattr(self, self.id_field_name())
 
     def keys(self):
         """
@@ -125,8 +182,34 @@ class ExtendedBase(object):
                 setattr(self, key, deepcopy(value))
 
     @classmethod
-    def smart_insert(cls, engine_or_session, data, minimal_size=5):
-        """An optimized Insert strategy.
+    def by_id(cls, _id, engine_or_session):
+        """
+        Get one object by primary_key value.
+        """
+        ses, auto_close = ensure_session(engine_or_session)
+        obj = ses.query(cls).get(_id)
+        if auto_close:
+            ses.close()
+        return obj
+
+    @classmethod
+    def by_sql(cls, sql, engine_or_session):
+        """
+        Query with sql statement or texture sql.
+        """
+        ses, auto_close = ensure_session(engine_or_session)
+        result = ses.query(cls).from_statement(sql).all()
+        if auto_close:
+            ses.close()
+        return result
+
+    @classmethod
+    def smart_insert(cls, engine_or_session, data, minimal_size=5, op_counter=0):
+        """
+        An optimized Insert strategy.
+
+        :return: number of insertion operation been executed. Usually it is
+            greatly smaller than ``len(data)``.
 
         **中文文档**
 
@@ -141,18 +224,14 @@ class ExtendedBase(object):
         该Insert策略在内存上需要额外的 sqrt(nbytes) 的开销, 跟原数据相比体积很小。
         但时间上是各种情况下平均最优的。
         """
-        if isinstance(engine_or_session, Engine):
-            ses = sessionmaker(bind=engine_or_session)()
-            auto_close = True
-        elif isinstance(engine_or_session, Session):
-            ses = engine_or_session
-            auto_close = False
+        ses, auto_close = ensure_session(engine_or_session)
 
         if isinstance(data, list):
             # 首先进行尝试bulk insert
             try:
                 ses.add_all(data)
                 ses.commit()
+                op_counter += 1
             # 失败了
             except (IntegrityError, FlushError):
                 ses.rollback()
@@ -163,13 +242,15 @@ class ExtendedBase(object):
                     # 则进行分包
                     n_chunk = math.floor(math.sqrt(n))
                     for chunk in grouper_list(data, n_chunk):
-                        cls.smart_insert(ses, chunk, minimal_size)
+                        op_counter = cls.smart_insert(
+                            ses, chunk, minimal_size, op_counter)
                 # 否则则一条条地逐条插入
                 else:
                     for obj in data:
                         try:
                             ses.add(obj)
                             ses.commit()
+                            op_counter += 1
                         except (IntegrityError, FlushError):
                             ses.rollback()
         else:
@@ -179,4 +260,38 @@ class ExtendedBase(object):
             except (IntegrityError, FlushError):
                 ses.rollback()
 
-        ses.close()
+        if auto_close:
+            ses.close()
+
+        return op_counter
+
+    @classmethod
+    def update_all(cls, engine, obj_or_data, upsert=False):
+        """
+        The :meth:`sqlalchemy.crud.updating.update_all` function in ORM syntax.
+
+        :param engine: an engine created by``sqlalchemy.create_engine``.
+        :param obj_or_data: single object or list of object
+        :param upsert: if True, then do insert also.
+        """
+        obj_or_data = ensure_list(obj_or_data)
+        update_all(
+            engine=engine,
+            table=cls.__table__,
+            data=[obj.to_dict(include_null=False) for obj in obj_or_data],
+            upsert=upsert,
+        )
+
+    @classmethod
+    def upsert_all(cls, engine, obj_or_data):
+        """
+        The :meth:`sqlalchemy.crud.updating.upsert_all` function in ORM syntax.
+
+        :param engine: an engine created by``sqlalchemy.create_engine``.
+        :param obj_or_data: single object or list of object
+        """
+        cls.update_all(
+            engine=engine,
+            obj_or_data=obj_or_data,
+            upsert=True,
+        )

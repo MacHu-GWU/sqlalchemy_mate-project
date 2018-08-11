@@ -7,26 +7,15 @@ This module provide utility functions for update operation.
 
 from collections import OrderedDict
 from sqlalchemy import and_
+from ..utils import ensure_list
 
 
-def upsert_all(engine, table, data):
+def update_all(engine, table, data, upsert=False):
     """
-    Update data by primary key columns. If not able to update, do insert.
-
-    Example::
-
-        # suppose in database we already have {"id": 1, "name": "Alice"}
-        >>> data = [
-        ...     {"id": 1, "name": "Bob"}, # this will be updated
-        ...     {"id": 2, "name": "Cathy"}, # this will be added
-        ... ]
-        >>> upsert_all(engine, table_user, data)
-
-    **中文文档**
-
-    批量更新文档. 如果该表格定义了Primary Key, 则用Primary Key约束where语句. 对于
-    where语句无法找到的行, 自动进行批量bulk insert.
+    Update data by its primary_key column.
     """
+    data = ensure_list(data)
+
     ins = table.insert()
     upd = table.update()
 
@@ -70,5 +59,29 @@ def upsert_all(engine, table, data):
         data_to_insert = data
 
     # Insert rest of data
-    if len(data_to_insert):
-        engine.execute(ins, data_to_insert)
+    if upsert:
+        if len(data_to_insert):
+            engine.execute(ins, data_to_insert)
+
+
+def upsert_all(engine, table, data):
+    """
+    Update data by primary key columns. If not able to update, do insert.
+
+    Example::
+
+        # suppose in database we already have {"id": 1, "name": "Alice"}
+        >>> data = [
+        ...     {"id": 1, "name": "Bob"}, # this will be updated
+        ...     {"id": 2, "name": "Cathy"}, # this will be added
+        ... ]
+        >>> upsert_all(engine, table_user, data)
+        >>> engine.execute(select([table_user])).fetchall()
+        [{"id": 1, "name": "Bob"}, {"id": 2, "name": "Cathy"}]
+
+    **中文文档**
+
+    批量更新文档. 如果该表格定义了Primary Key, 则用Primary Key约束where语句. 对于
+    where语句无法找到的行, 自动进行批量bulk insert.
+    """
+    update_all(engine, table, data, upsert=True)

@@ -11,6 +11,7 @@ from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select, text
 from collections import OrderedDict
 
 from sqlalchemy_mate.orm.extended_declarative_base import ExtendedBase
@@ -28,6 +29,8 @@ class User(Base, ExtendedBase):
 
 
 Base.metadata.create_all(engine)
+
+Session = sessionmaker(bind=engine)
 
 
 class TestExtendedBase(object):
@@ -113,7 +116,7 @@ class TestExtendedBase(object):
         Session = sessionmaker(bind=engine)
         ses = Session()
 
-        scale = 5
+        scale = 6
         n_exist = scale
         n_all = scale ** 3
 
@@ -132,10 +135,12 @@ class TestExtendedBase(object):
         assert ses.query(User).count() == len(exist_data)
 
         st = time.clock()
-        User.smart_insert(ses, all_data)
+        op_counter = User.smart_insert(ses, all_data)
         elapse1 = time.clock() - st
 
         assert ses.query(User).count() == n_all
+
+        assert op_counter <= (0.5 * n_all)
 
         # user regular insert
         engine.execute(User.__table__.delete())
@@ -175,6 +180,65 @@ class TestExtendedBase(object):
         user = User(id=1)
         User.smart_insert(engine, user)
         assert selecting.count_row(engine, User.__table__) == 1
+
+    def test_primary_key_and_id_field(self):
+        assert User.pk_names() == ("id",)
+        assert User.id_field_name() == "id"
+        assert User.pk_names() == ("id",)
+        assert User.id_field_name() == "id"
+
+        assert User(id=1).pk_values() == (1,)
+        assert User(id=1).id_field_value() == 1
+
+    def test_by_id(self):
+        engine.execute(User.__table__.delete())
+        user = User(id=1, name="Michael Jackson")
+        User.smart_insert(engine, user)
+        assert User.by_id(1, engine).name == "Michael Jackson"
+        assert User.by_id(100, engine) == None
+
+    def test_by_sql(self):
+        engine.execute(User.__table__.delete())
+        User.smart_insert(engine, [
+            User(id=1, name="Alice"),
+            User(id=2, name="Bob"),
+            User(id=3, name="Cathy"),
+        ])
+        t_user = User.__table__
+
+        sql = select([t_user]).where(t_user.c.id >= 2)
+        assert len(User.by_sql(sql, engine)) == 2
+
+        sql = select([t_user]).where(t_user.c.id >= 2).limit(1)
+        assert len(User.by_sql(sql, engine)) == 1
+
+        sql = text("""
+        SELECT *
+        FROM extended_declarative_base_user as user
+        WHERE user.id >= 2
+        """)
+        assert len(User.by_sql(sql, engine)) == 2
+
+    def test_smart_update(self):
+        ses = Session()
+
+        engine.execute(User.__table__.delete())
+        User.smart_insert(engine, [User(id=1)])
+
+        User.update_all(
+            engine, [User(id=1, name="Alice"), User(id=2, name="Bob")])
+        result = ses.query(User).all()
+        assert len(result) == 1
+        result[0].name == "Alice"
+
+        User.upsert_all(
+            engine, [User(id=1, name="Adam"), User(id=2, name="Bob")])
+        result = ses.query(User).all()
+        assert len(result) == 2
+        result[0].name == "Adam"
+        result[1].name == "Bob"
+
+        ses.close()
 
 
 if __name__ == "__main__":

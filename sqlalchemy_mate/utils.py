@@ -6,6 +6,13 @@ Utilities function.
 """
 
 
+def ensure_list(item):
+    if not isinstance(item, (list, tuple)):
+        return [item, ]
+    else:
+        return item
+
+
 def grouper_list(l, n):
     """Evenly divide list into fixed-length piece, no filled value if chunk
     size smaller than fixed-length.

@@ -2,7 +2,7 @@ Release and Version History
 ===========================
 
 
-0.0.4 (TODO)
+0.0.5 (TODO)
 ~~~~~~~~~~~~
 **Features and Improvements**
 
@@ -11,6 +11,21 @@ Release and Version History
 **Bugfixes**
 
 **Miscellaneous**
+
+
+0.0.4 (2018-08-11)
+~~~~~~~~~~~~~~~~~~
+**Features and Improvements**
+
+- add ``ExtendedBase.pk_names``, ``ExtendedBase.id_field_name``, ``ExtendedBase.by_id``, ``ExtendedBase.by_sql``, ``ExtendedBase.update_all``, ``ExtendedBase.upsert_all``.
+
+**Minor Improvements**
+
+- use ``pygitrepo==0.0.21``
+
+**Miscellaneous**
+
+- Now ``ExtendedBase.smart_insert`` method returns number of insertion operation. So you can see the difference now.
 
 
 0.0.3 (2018-07-22)
