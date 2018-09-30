@@ -2,7 +2,7 @@ Release and Version History
 ===========================
 
 
-0.0.5 (TODO)
+0.0.6 (TODO)
 ~~~~~~~~~~~~
 **Features and Improvements**
 
@@ -11,6 +11,14 @@ Release and Version History
 **Bugfixes**
 
 **Miscellaneous**
+
+
+0.0.5 (2018-09-30)
+~~~~~~~~~~~~~~~~~~
+**Features and Improvements**
+
+- ``ExtendedBase.keys()`` now is a class method.
+- ``ExtendedBase.glance()`` can print major attributes and values.
 
 
 0.0.4 (2018-08-11)

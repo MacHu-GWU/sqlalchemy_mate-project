@@ -5,6 +5,7 @@
 Extend the power of declarative base.
 """
 
+from __future__ import print_function
 import math
 from copy import deepcopy
 from collections import OrderedDict
@@ -53,6 +54,9 @@ class ExtendedBase(object):
     """
     _cache_pk_names = None
     _cache_id_field_name = None
+    _cache_keys = None
+
+    _settings_major_attrs = None
 
     @classmethod
     def _get_primary_key_names(cls):
@@ -85,18 +89,21 @@ class ExtendedBase(object):
             else:  # pragma: no cover
                 raise ValueError(
                     "{classname} has more than 1 primary key!"
-                    .format(classname=cls.__name__)
+                        .format(classname=cls.__name__)
                 )
         return cls._cache_id_field_name
 
     def id_field_value(self):
         return getattr(self, self.id_field_name())
 
-    def keys(self):
+    @classmethod
+    def keys(cls):
         """
         return list of all declared columns.
         """
-        return [c.name for c in self.__table__._columns]
+        if cls._cache_keys is None:
+            cls._cache_keys = [c.name for c in cls.__table__._columns]
+        return cls._cache_keys
 
     def values(self):
         """
@@ -149,6 +156,22 @@ class ExtendedBase(object):
                 except KeyError:
                     pass
             return OrderedDict(items)
+
+    def glance(self):  # pragma: no cover
+        if self._settings_major_attrs is None:
+            msg = ("Please specify attributes you want to include "
+                   "in `class._settings_major_attrs`!")
+            raise NotImplementedError(msg)
+
+        kwargs = [(attr, getattr(self, attr)) for attr in self._settings_major_attrs]
+        text = "{classname}({kwargs})".format(
+            classname=self.__class__.__name__,
+            kwargs=", ".join([
+                "%s=%r" % (attr, value)
+                for attr, value in kwargs
+            ])
+        )
+        print(text)
 
     def absorb(self, other):
         """
