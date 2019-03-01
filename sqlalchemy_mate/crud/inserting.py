@@ -7,13 +7,14 @@ This module provide utility functions for insert operation.
 
 import math
 from sqlalchemy.exc import IntegrityError
+
 try:
     from ..utils import grouper_list
 except:  # pragma: no cover
     from sqlalchemy_mate.utils import grouper_list
 
 
-def smart_insert(engine, table, data, minimal_size=5):
+def smart_insert(engine, table, data, minimal_size=5, op_counter=0):
     """
     An optimized Insert strategy. Guarantee successful and highest insertion
     speed. But ATOMIC WRITE IS NOT ENSURED IF THE PROGRAM IS INTERRUPTED.
@@ -37,6 +38,7 @@ def smart_insert(engine, table, data, minimal_size=5):
         # 首先进行尝试bulk insert
         try:
             engine.execute(insert, data)
+            op_counter += 1
         # 失败了
         except IntegrityError:
             # 分析数据量
@@ -46,12 +48,13 @@ def smart_insert(engine, table, data, minimal_size=5):
                 # 则进行分包
                 n_chunk = math.floor(math.sqrt(n))
                 for chunk in grouper_list(data, n_chunk):
-                    smart_insert(engine, table, chunk, minimal_size)
+                    op_counter = smart_insert(engine, table, chunk, minimal_size, op_counter)
             # 否则则一条条地逐条插入
             else:
                 for row in data:
                     try:
                         engine.execute(insert, row)
+                        op_counter += 1
                     except IntegrityError:
                         pass
     else:
@@ -59,3 +62,5 @@ def smart_insert(engine, table, data, minimal_size=5):
             engine.execute(insert, data)
         except IntegrityError:
             pass
+
+    return op_counter

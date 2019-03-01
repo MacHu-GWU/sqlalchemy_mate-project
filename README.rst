@@ -57,13 +57,21 @@ A library extend sqlalchemy module, makes CRUD easier.
 Features
 ------------------------------------------------------------------------------
 
+.. contents::
+    :local:
+    :depth: 1
+
 
 Read Database Credential Safely
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``sqlalchemy_mate`` allows
+.. contents::
+    :local:
+    :depth: 1
 
-**From json file**::
+
+From json file
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 content of json::
 
@@ -94,7 +102,11 @@ code::
 
 Any json scheme should work.
 
-**From** ``$HOME/.db.json``::
+
+From ``$HOME/.db.json``
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+::
 
     from sqlalchemy_mate import EngineCreator
 
@@ -116,7 +128,11 @@ Any json scheme should work.
         }
     }
 
-**From json file on AWS S3**::
+
+From json file on AWS S3
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+::
 
     from sqlalchemy_mate import EngineCreator
 
@@ -127,12 +143,63 @@ Any json scheme should work.
     )
     engine = ec.create_redshift()
 
-**From Environment Variable**::
+
+From Environment Variable
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+::
 
     from sqlalchemy_mate import EngineCreator
 
     ec = EngineCreator.from_env(prefix="DB_DEV")
     engine = ec.create_redshift()
+
+
+
+Smart Insert
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In bulk insert, if there are some rows having primary_key conflict, the classic solution is::
+
+    for row in data:
+        try:
+            engine.execute(table.insert(), row)
+        except sqlalchemy.sql.IntegrityError:
+            pass
+
+It is like one-by-one insert, which is super slow.
+
+``sqlalchemy_mate`` uses ``smart_insert`` strategy to try with smaller bulk insert, which has higher probabily to work. As a result, total number of commits are greatly reduced.
+
+With sql expression::
+
+    from sqlalchemy_mate import inserting
+
+    engine = create_engine(...)
+    t_users = Table(
+        "users", metadata,
+        Column("id", Integer),
+        ...
+    )
+    # lots of data
+    data = [{"id": 1, "name": "Alice}, {"id": 2, "name": "Bob"}, ...]
+
+    inserting.smart_insert(engine, t_users, data)
+
+
+With ORM::
+
+    from sqlalchemy_mate import ExtendedBase
+
+    Base = declarative_base()
+
+    class User(Base, ExtendedBase): # inherit from ExtendedBase
+        ...
+
+    # lots of users
+    data = [User(id=1, name="Alice"), User(id=2, name="Bob"), ...]
+
+    User.smart_insert(engine_or_session, data) # That's it
 
 
 .. _install:
