@@ -26,7 +26,7 @@ def count_row(engine, table):
 
     返回一个表中的行数。
     """
-    return engine.execute(table.count()).fetchone()[0]
+    return engine.execute(select([func.count()]).select_from(table)).fetchone()[0]
 
 
 def select_all(engine, table):

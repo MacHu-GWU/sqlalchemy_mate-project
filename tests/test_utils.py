@@ -17,7 +17,7 @@ def test_convert_query_to_sql_statement():
     ses = sessionmaker(bind=engine)()
     query = ses.query(User)
     sql = utils.convert_query_to_sql_statement(query)
-    assert engine.execute(sql.count()).fetchone()[0] == 3
+    assert len(engine.execute(sql).fetchall()) == 3
     ses.close()
 
 

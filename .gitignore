@@ -2,6 +2,7 @@
 sqlalchemy_mate_venv/
 sqlalchemy_mate.egg-info/
 sqlalchemy_mate-*/
+.db.json
 
 
 # Byte-compiled / optimized / DLL files

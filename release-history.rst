@@ -1,3 +1,5 @@
+.. _release_history:
+
 Release and Version History
 ===========================
 
@@ -13,12 +15,17 @@ Release and Version History
 **Miscellaneous**
 
 
-0.0.5 (2018-09-30)
+0.0.5 (2019-03-01)
 ~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
 
 - ``ExtendedBase.keys()`` now is a class method.
 - ``ExtendedBase.glance()`` can print major attributes and values.
+- **A New DB Credential reader** ``from sqlalchemy_mate import Credential, EngineCreator``
+
+**Minor Improvements**
+
+- change ``FromClause.count()`` -> ``func.count()``, since previous one will be deprecated soon in sqlalchemy.
 
 
 0.0.4 (2018-08-11)

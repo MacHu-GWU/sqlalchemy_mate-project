@@ -1,17 +1,16 @@
 .. contents::
 
+Release v\ |release| (:ref:`What's new? <release_history>`).
+
 .. include:: ../../README.rst
 
 Table of Content
 ------------------------------------------------------------------------------
 
-.. toctree::
-   :maxdepth: 1
+.. autotoctree::
 
-    Whats Problem does ``sqlalchemy_mate`` Solves? <01 - What Problem does sqlalchemy_mate solves/index.rst>
-    
+.. include:: ../../AUTHORS.rst
 
-.. include:: author.rst
 
 API Document
 ------------------------------------------------------------------------------
