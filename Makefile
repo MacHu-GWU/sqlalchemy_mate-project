@@ -43,7 +43,7 @@ req-test: ## Install Test Dependencies
 
 
 #--- Test ---
-test: pip-dev-install req-test ## ** Run test
+test: req-test pip-dev-install ## ** Run test
 	bash ./bin/py/test.sh
 
 
@@ -51,7 +51,7 @@ test-only: ## Run test without checking test dependencies
 	bash ./bin/py/test.sh
 
 
-cov: pip-dev-install req-test ## ** Run Code Coverage test
+cov: req-test pip-dev-install ## ** Run Code Coverage test
 	bash ./bin/py/test-cov.sh
 
 
@@ -100,7 +100,7 @@ reformat: req-dev ## ** Pep8 Format Python Source Code
 	bash ./bin/py/reformat-python-code.sh
 
 
-publish: req-dev ## ** Publish This Package to PyPI
+publish: req-dev pip-dev-install ## ** Publish This Package to PyPI
 	bash ./bin/py/publish-to-pypi.sh
 
 
