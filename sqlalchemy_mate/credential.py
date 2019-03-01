@@ -158,6 +158,8 @@ class Credential(object):
         :param local_home: if you set this to your $HOME username, then
             activate use of ``aws_profile`` to connect.
         """
+        import boto3
+
         ses = boto3.Session(
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,

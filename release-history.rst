@@ -4,7 +4,7 @@ Release and Version History
 ===========================
 
 
-0.0.6 (TODO)
+0.0.7 (TODO)
 ~~~~~~~~~~~~
 **Features and Improvements**
 
@@ -13,6 +13,14 @@ Release and Version History
 **Bugfixes**
 
 **Miscellaneous**
+
+
+0.0.6 (2019-03-02)
+~~~~~~~~~~~~~~~~~~
+
+**Bugfixes**
+
+- add ``import boto3`` in ``Credential.from_s3_json()``
 
 
 0.0.5 (2019-03-01)
