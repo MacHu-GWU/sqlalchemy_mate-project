@@ -73,7 +73,9 @@ Read Database Credential Safely
 From json file
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-content of json::
+content of json:
+
+.. code-block:: python
 
     {
         "credentials": {
@@ -90,7 +92,9 @@ content of json::
         }
     }
 
-code::
+code:
+
+.. code-block:: python
 
     from sqlalchemy_mate import EngineCreator
 
@@ -106,14 +110,16 @@ Any json scheme should work.
 From ``$HOME/.db.json``
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-::
+.. code-block:: python
 
     from sqlalchemy_mate import EngineCreator
 
     ec = EngineCreator.from_home_db_json(identifier="db1")
     engine = ec.create_postgresql_psycopg2()
 
-``$HOME/.db.json`` **assumes flat json schema**::
+``$HOME/.db.json`` **assumes flat json schema**:
+
+.. code-block:: python
 
     {
         "identifier1": {
@@ -132,7 +138,7 @@ From ``$HOME/.db.json``
 From json file on AWS S3
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-::
+.. code-block:: python
 
     from sqlalchemy_mate import EngineCreator
 
@@ -147,19 +153,28 @@ From json file on AWS S3
 From Environment Variable
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-::
+.. code-block:: python
 
     from sqlalchemy_mate import EngineCreator
 
     ec = EngineCreator.from_env(prefix="DB_DEV")
     engine = ec.create_redshift()
 
+If you want to read database credential safely from cloud, for example, AWS EC2, AWS Lambda, you can use AWS KMS to decrypt your credentials
+
+.. code-block:: python
+
+    # leave aws_profile=None if you are on cloud
+    ec = EngineCreator.from_env(prefix="DB_DEV", kms_decrypt=True, aws_profile="xxx")
+    engine = ec.create_redshift()
 
 
 Smart Insert
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In bulk insert, if there are some rows having primary_key conflict, the classic solution is::
+In bulk insert, if there are some rows having primary_key conflict, the classic solution is:
+
+.. code-block:: python
 
     for row in data:
         try:
@@ -171,7 +186,9 @@ It is like one-by-one insert, which is super slow.
 
 ``sqlalchemy_mate`` uses ``smart_insert`` strategy to try with smaller bulk insert, which has higher probabily to work. As a result, total number of commits are greatly reduced.
 
-With sql expression::
+With sql expression:
+
+.. code-block:: python
 
     from sqlalchemy_mate import inserting
 
@@ -187,7 +204,9 @@ With sql expression::
     inserting.smart_insert(engine, t_users, data)
 
 
-With ORM::
+With ORM:
+
+.. code-block:: python
 
     from sqlalchemy_mate import ExtendedBase
 
@@ -200,6 +219,25 @@ With ORM::
     data = [User(id=1, name="Alice"), User(id=2, name="Bob"), ...]
 
     User.smart_insert(engine_or_session, data) # That's it
+
+
+Smart Update / Upsert
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Automatically update value by primary key.
+
+.. code-block:: python
+
+    # in sql expression
+    from sqlalchemy_mate import updating
+
+    updating.update_all(engine, table, data)
+    updating.upsert_all(engine, table, data)
+
+    # in ORM
+
+    User.update_all(engine_or_session, user_list)
+    User.upsert_all(engine_or_session, user_list)
 
 
 .. _install:

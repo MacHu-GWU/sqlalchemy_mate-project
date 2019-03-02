@@ -4,7 +4,7 @@ Release and Version History
 ===========================
 
 
-0.0.7 (TODO)
+0.0.8 (TODO)
 ~~~~~~~~~~~~
 **Features and Improvements**
 
@@ -13,6 +13,18 @@ Release and Version History
 **Bugfixes**
 
 **Miscellaneous**
+
+
+0.0.7 (2019-03-02)
+~~~~~~~~~~~~~~~~~~
+**Features and Improvements**
+
+- add ``test_connection(engine, timeout=3)`` function.
+- integrate ``Credential.from_env`` with AWS Key management Service.
+
+**Miscellaneous**
+
+- Deprecating ``sqlalchemy_mate.engine_creator``
 
 
 0.0.6 (2019-03-02)

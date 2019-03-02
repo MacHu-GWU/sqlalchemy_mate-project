@@ -7,6 +7,7 @@ __license__ = "MIT"
 
 try:
     from . import engine_creator, io, pt
+    from .utils import test_connection
     from .credential import Credential, EngineCreator
     from .crud import selecting, inserting, updating
     from .orm.extended_declarative_base import ExtendedBase
