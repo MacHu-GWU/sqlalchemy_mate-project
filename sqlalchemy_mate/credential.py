@@ -174,26 +174,66 @@ class Credential(object):
         return cls._from_json_data(data, json_path, key_mapping)
 
     @classmethod
-    def from_env(cls, prefix):  # pragma: no cover
+    def from_env(cls, prefix, kms_decrypt=False, aws_profile=None):
         """
         Load database credential from env variable.
 
-        :param prefix: PREFIX_HOST, PREFIX_PORT, ...
+        - host: ENV.{PREFIX}_HOST
+        - port: ENV.{PREFIX}_PORT
+        - database: ENV.{PREFIX}_DATABASE
+        - username: ENV.{PREFIX}_USERNAME
+        - password: ENV.{PREFIX}_PASSWORD
+
+        :param prefix: str
+        :param kms_decrypt: bool
+        :param aws_profile: str
         """
         if len(prefix) < 1:
             raise ValueError("prefix can't be empty")
-        if prefix[-1] in "!@#$%^&*()-=+|{}[]:;<>,.?/":
-            raise ValueError("prefix can't end with '%s'" % prefix[-1])
-        if len(set(string.ascii_lowercase).intersection(set(prefix))):
-            raise ValueError("prefix has to be all uppercase!")
+
+        if len(set(prefix).difference(set(string.ascii_uppercase + "_"))):
+            raise ValueError("prefix can only use [A-Z] and '_'!")
+
         if not prefix.endswith("_"):
             prefix = prefix + "_"
-        return cls(
+
+        data = dict(
             host=os.getenv(prefix + "HOST"),
-            port=int(os.getenv(prefix + "PORT")),
+            port=os.getenv(prefix + "PORT"),
             database=os.getenv(prefix + "DATABASE"),
             username=os.getenv(prefix + "USERNAME"),
             password=os.getenv(prefix + "PASSWORD"),
+        )
+        if kms_decrypt is True:  # pragma: no cover
+            import boto3
+            if aws_profile is not None:
+                kms = boto3.client("kms")
+            else:
+                ses = boto3.Session(profile_name=aws_profile)
+                kms = ses.client("kms")
+
+            def decrypt(kms, text):
+                return kms.decrypt(
+                    CiphertextBlob=b64decode(text.encode("utf-8"))
+                )["Plaintext"].decode("utf-8")
+
+            data = {
+                key: value if value is None else decrypt(kms, str(value))
+                for key, value in data.items()
+            }
+
+        return cls(**data)
+
+    def to_dict(self):
+        """
+        Convert credentials into a dict.
+        """
+        return dict(
+            host=self.host,
+            port=self.port,
+            database=self.database,
+            username=self.username,
+            password=self.password,
         )
 
 
@@ -283,6 +323,7 @@ class EngineCreator(Credential):  # pragma: no cover
 
 if __name__ == "__main__":
     import boto3
+    from base64 import b64decode
 
     cred = Credential.from_s3_json(
         "sanhe-credential", "db/elephant-dupe-remove.json",

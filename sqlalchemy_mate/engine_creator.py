@@ -26,6 +26,10 @@ template = "{dialect}{driver}://{username}:{password}@{host}{port}/{database}"
 
 
 def format_url(dialect, driver, username, password, host, port, database):
+    import warnings
+    msg = "sqlalchemy_mate.engine_creator will be deprecate soon, use sqlalchemy_mate.EngineCreator instead"
+    warnings.warn(msg, DeprecationWarning)
+
     return template.format(
         dialect=dialect,
         driver=preprocess_driver(driver),

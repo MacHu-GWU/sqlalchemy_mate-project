@@ -1,1 +1,2 @@
 sqlalchemy
+timeout_decorator==0.4.1

@@ -10,5 +10,6 @@ try:
     from .credential import Credential, EngineCreator
     from .crud import selecting, inserting, updating
     from .orm.extended_declarative_base import ExtendedBase
+    from timeout_decorator import TimeoutError
 except:  # pragma: no cover
     pass

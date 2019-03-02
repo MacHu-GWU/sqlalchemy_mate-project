@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from pytest import raises, approx
+from pytest import raises
 import os
 import json
 from sqlalchemy_mate.credential import Credential, EngineCreator
@@ -33,6 +33,25 @@ class TestCredential(object):
     def test_from_json_data(self):
         cred = Credential.from_json(json_file, json_path="mydb")
         assert cred.uri == "user:pass@host:1234/dev"
+
+        cred.to_dict()
+
+    def test_from_env(self):
+        os.environ["DB_HOST"] = "host"
+        os.environ["DB_PORT"] = "1234"
+        os.environ["DB_DATABASE"] = "dev"
+        os.environ["DB_USERNAME"] = "user"
+        os.environ["DB_PASSWORD"] = "pass"
+        cred = Credential.from_env(prefix="DB")
+        assert cred.uri == "user:pass@host:1234/dev"
+        cred = Credential.from_env(prefix="DB_")
+        assert cred.uri == "user:pass@host:1234/dev"
+
+        with raises(ValueError):
+            Credential.from_env(prefix="db")
+
+        with raises(ValueError):
+            Credential.from_env(prefix="VAR1")
 
     def test_validate_key_mapping(self):
         with raises(ValueError):

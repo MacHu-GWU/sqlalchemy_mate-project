@@ -1,9 +1,10 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
 Utilities function.
 """
+
+import sqlalchemy as sa
 
 
 def ensure_list(item):
@@ -79,3 +80,22 @@ def execute_query_return_result_proxy(query):
         close_with_result=True)
 
     return conn.execute(context.statement, query._params)
+
+
+def test_connection(engine, timeout=3):
+    import timeout_decorator
+
+    @timeout_decorator.timeout(timeout)
+    def test(engine):
+        v = engine.execute(sa.text("SELECT 1;")).fetchall()[0][0]
+        assert v == 1
+
+    try:
+        test(engine)
+        return True
+    except timeout_decorator.TimeoutError:
+        raise timeout_decorator.TimeoutError("time out in %s seconds!" % timeout)
+    except AssertionError:  # pragma: no cover
+        raise ValueError
+    except Exception as e:
+        raise e

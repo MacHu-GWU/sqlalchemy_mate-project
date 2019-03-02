@@ -21,6 +21,22 @@ def test_convert_query_to_sql_statement():
     ses.close()
 
 
+def test_timeout():
+    from sqlalchemy_mate import EngineCreator, TimeoutError
+
+    engine = EngineCreator(
+        host="stampy.db.elephantsql.com", port=5432,
+        database="diyvavwx", username="diyvavwx", password="wrongpassword"
+    ).create_postgresql_psycopg2()
+    with pytest.raises(Exception):
+        utils.test_connection(engine, timeout=10)
+
+    engine = EngineCreator().create_sqlite()
+    with pytest.raises(TimeoutError):
+        utils.test_connection(engine, timeout=0.000001)
+    utils.test_connection(engine, timeout=3)
+
+
 if __name__ == "__main__":
     import os
 

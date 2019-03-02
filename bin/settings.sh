@@ -11,9 +11,9 @@ github_repo_name="sqlalchemy_mate-project"
 
 # Python
 package_name="sqlalchemy_mate"
-py_ver_major="2"
-py_ver_minor="7"
-py_ver_micro="13"
+py_ver_major="3"
+py_ver_minor="6"
+py_ver_micro="2"
 use_pyenv="Y" # "Y" or "N"
 supported_py_versions="2.7.13 3.4.6 3.5.3 3.6.2" # e.g: "2.7.13 3.6.2"
 
