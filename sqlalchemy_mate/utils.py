@@ -94,7 +94,8 @@ def test_connection(engine, timeout=3):
         test(engine)
         return True
     except timeout_decorator.TimeoutError:
-        raise timeout_decorator.TimeoutError("time out in %s seconds!" % timeout)
+        raise timeout_decorator.TimeoutError(
+            "time out in %s seconds!" % timeout)
     except AssertionError:  # pragma: no cover
         raise ValueError
     except Exception as e:

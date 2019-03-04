@@ -47,7 +47,8 @@ def smart_insert(engine, table, data, minimal_size=5, op_counter=0):
                 # 则进行分包
                 n_chunk = math.floor(math.sqrt(n))
                 for chunk in grouper_list(data, n_chunk):
-                    op_counter = smart_insert(engine, table, chunk, minimal_size, op_counter)
+                    op_counter = smart_insert(
+                        engine, table, chunk, minimal_size, op_counter)
             # 否则则一条条地逐条插入
             else:
                 for row in data:

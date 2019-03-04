@@ -79,9 +79,9 @@ class Credential(object):
         """
         Load connection credential from json file.
 
-        :param json_file:
-        :param json_path: dot notation of the path to the credential dict.
-        :param key_mapping: map 'host', 'port', 'database', 'username', 'password'
+        :param json_file: str, path to json file
+        :param json_path: str, dot notation of the path to the credential dict.
+        :param key_mapping: dict, map 'host', 'port', 'database', 'username', 'password'
             to custom alias, for example ``{'host': 'h', 'port': 'p', 'database': 'db', 'username': 'user', 'password': 'pwd'}``. This params are used to adapt any json data.
         :return:
 
@@ -121,7 +121,8 @@ class Credential(object):
         """
         Read credential from $HOME/.db.json file.
 
-        :param identifier: database identifier.
+        :param identifier: str, database identifier.
+        :param key_mapping: dict
 
         ``.db.json````::
 
@@ -151,12 +152,13 @@ class Credential(object):
         """
         Load database credential from json on s3.
 
-        :param bucket_name:
-        :param key:
+        :param bucket_name: str
+        :param key: str
         :param aws_profile: if None, assume that you are using this from
             AWS cloud. (service on the same cloud doesn't need profile name)
-        :param local_home: if you set this to your $HOME username, then
-            activate use of ``aws_profile`` to connect.
+        :param aws_access_key_id: str, not recommend to use
+        :param aws_secret_access_key: str, not recommend to use
+        :param region_name: str
         """
         import boto3
 
@@ -167,7 +169,6 @@ class Credential(object):
             profile_name=aws_profile,
         )
         s3 = ses.resource("s3")
-
         bucket = s3.Bucket(bucket_name)
         object = bucket.Object(key)
         data = json.loads(object.get()["Body"].read().decode("utf-8"))
@@ -206,6 +207,8 @@ class Credential(object):
         )
         if kms_decrypt is True:  # pragma: no cover
             import boto3
+            from base64 import b64decode
+
             if aws_profile is not None:
                 kms = boto3.client("kms")
             else:
@@ -238,87 +241,160 @@ class Credential(object):
 
 
 class EngineCreator(Credential):  # pragma: no cover
-    def _create_engine(self, dialect_and_driver, **kwargs):
-        conn_str = "{}://{}".format(dialect_and_driver, self.uri)
+    """
+    Tired of looking up docs on https://docs.sqlalchemy.org/en/latest/core/engines.html?
+
+    ``EngineCreator`` creates sqlalchemy engine in one line:
+
+    Example::
+
+        from sqlalchemy_mate import EngineCreator
+
+        # sqlite in memory
+        engine = EngineCreator.create_sqlite()
+
+        # postgresql
+        engine = EngineCreator.from_home_db_json("mydb").create_postgresql()
+    """
+    def create_connect_str(self, dialect_and_driver):
+        return "{}://{}".format(dialect_and_driver, self.uri)
+
+    _ccs = create_connect_str
+
+    def create_engine(self, conn_str, **kwargs):
         return sa.create_engine(conn_str, **kwargs)
 
-    _ce = _create_engine
+    _ce = create_engine
 
-    def create_sqlite(self, path=":memory:", **kwargs):
+    @classmethod
+    def create_sqlite(cls, path=":memory:", **kwargs):
         """"""
         return sa.create_engine("sqlite:///{path}".format(path=path), **kwargs)
+
+    class DialectAndDriver(object):
+        psql = "postgresql"
+        psql_psycopg2 = "postgresql+psycopg2"
+        psql_pg8000 = "postgresql+pg8000"
+        psql_pygresql = "postgresql+pygresql"
+        psql_psycopg2cffi = "postgresql+psycopg2cffi"
+        psql_pypostgresql = "postgresql+pypostgresql"
+        mysql = "mysql"
+        mysql_mysqldb = "mysql+mysqldb"
+        mysql_mysqlconnector = "mysql+mysqlconnector"
+        mysql_oursql = "mysql+oursql"
+        mysql_pymysql = "mysql+pymysql"
+        mysql_cymysql = "mysql+cymysql"
+        oracle = "oracle"
+        oracle_cx_oracle = "oracle+cx_oracle"
+        mssql_pyodbc = "mssql+pyodbc"
+        mssql_pymssql = "mssql+pymssql"
+        redshift_psycopg2 = "redshift+psycopg2"
 
     # postgresql
     def create_postgresql(self, **kwargs):
         """"""
-        return self._ce("postgresql", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.psql), **kwargs
+        )
 
     def create_postgresql_psycopg2(self, **kwargs):
         """"""
-        return self._ce("postgresql+psycopg2", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.psql_psycopg2), **kwargs
+        )
 
     def create_postgresql_pg8000(self, **kwargs):
         """"""
-        return self._ce("postgresql+pg8000", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.psql_pg8000), **kwargs
+        )
 
     def _create_postgresql_pygresql(self, **kwargs):
         """"""
-        return self._ce("postgresql+pygresql", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.psql_pygresql), **kwargs
+        )
 
     def create_postgresql_psycopg2cffi(self, **kwargs):
         """"""
-        return self._ce("postgresql+psycopg2cffi", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.psql_psycopg2cffi), **kwargs
+        )
 
     def create_postgresql_pypostgresql(self, **kwargs):
         """"""
-        return self._ce("postgresql+pypostgresql", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.psql_pypostgresql), **kwargs
+        )
 
     # mysql
     def create_mysql(self, **kwargs):
         """"""
-        return self._ce("mysql", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mysql), **kwargs
+        )
 
     def create_mysql_mysqldb(self, **kwargs):
         """"""
-        return self._ce("mysql+mysqldb", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mysql_mysqldb), **kwargs
+        )
 
     def create_mysql_mysqlconnector(self, **kwargs):
-        return self._ce("mysql+mysqlconnector", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mysql_mysqlconnector), **kwargs
+        )
 
     def create_mysql_oursql(self, **kwargs):
         """"""
-        return self._ce("mysql+oursql", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mysql_oursql), **kwargs
+        )
 
     def create_mysql_pymysql(self, **kwargs):
         """"""
-        return self._ce("mysql+pymysql", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mysql_pymysql), **kwargs
+        )
 
     def create_mysql_cymysql(self, **kwargs):
         """"""
-        return self._ce("mysql+cymysql", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mysql_cymysql), **kwargs
+        )
 
     # oracle
     def create_oracle(self, **kwargs):
         """"""
-        return self._ce("oracle", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.oracle), **kwargs
+        )
 
     def create_oracle_cx_oracle(self, **kwargs):
         """"""
-        return self._ce("oracle+cx_oracle", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.oracle_cx_oracle), **kwargs
+        )
 
     # mssql
     def create_mssql_pyodbc(self, **kwargs):
         """"""
-        return self._ce("mssql+pyodbc", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mssql_pyodbc), **kwargs
+        )
 
     def create_mssql_pymssql(self, **kwargs):
         """"""
-        return self._ce("mssql+pymssql", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mssql_pymssql), **kwargs
+        )
 
     # redshift
     def create_redshift(self, **kwargs):
         """"""
-        return self._ce("redshift+psycopg2", **kwargs)
+        return self._ce(
+            self._ccs(self.DialectAndDriver.redshift_psycopg2), **kwargs
+        )
 
 
 if __name__ == "__main__":

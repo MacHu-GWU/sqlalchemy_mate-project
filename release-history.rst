@@ -4,7 +4,7 @@ Release and Version History
 ===========================
 
 
-0.0.8 (TODO)
+0.0.9 (TODO)
 ~~~~~~~~~~~~
 **Features and Improvements**
 
@@ -13,6 +13,18 @@ Release and Version History
 **Bugfixes**
 
 **Miscellaneous**
+
+
+0.0.8 (2019-03-04)
+~~~~~~~~~~~~~~~~~~
+**Bugfixes**
+
+- fix import error in ``Credential.from_env`` with AWS KMS.
+
+**Miscellaneous**
+
+- allow ``EngineCreator`` to return sqlalchemy connect string.
+- improved docs
 
 
 0.0.7 (2019-03-02)

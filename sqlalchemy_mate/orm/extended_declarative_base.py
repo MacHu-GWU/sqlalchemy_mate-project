@@ -88,7 +88,7 @@ class ExtendedBase(object):
             else:  # pragma: no cover
                 raise ValueError(
                     "{classname} has more than 1 primary key!"
-                        .format(classname=cls.__name__)
+                    .format(classname=cls.__name__)
                 )
         return cls._cache_id_field_name
 
@@ -162,7 +162,8 @@ class ExtendedBase(object):
                    "in `class._settings_major_attrs`!")
             raise NotImplementedError(msg)
 
-        kwargs = [(attr, getattr(self, attr)) for attr in self._settings_major_attrs]
+        kwargs = [(attr, getattr(self, attr))
+                  for attr in self._settings_major_attrs]
         text = "{classname}({kwargs})".format(
             classname=self.__class__.__name__,
             kwargs=", ".join([

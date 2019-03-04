@@ -69,9 +69,20 @@ Read Database Credential Safely
     :local:
     :depth: 1
 
+Put your database connection credential in your source code is always a **BAD IDEA**.
+
+``sqlalchemy_mate`` provides several options to allow loading credential easily.
+
 
 From json file
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+API :meth:`~sqlalchemy_mate.credential.Credential.from_json`.
+
+You need to specify two things:
+
+1. path to json file.
+2. field path to the data. If your connect info is nested deeply in the json, you can use the dot notation json path to point to it.
 
 content of json:
 
@@ -104,11 +115,31 @@ code:
     )
     engine = ec.create_postgresql_psycopg2()
 
-Any json scheme should work.
+**Default data fields** are ``host``, ``port``, ``database``, ``username``, ``password``.
+
+If your json schema is different, you need to add the ``key_mapping`` to **specify the field name mapping**:
+
+.. code-block:: python
+
+    ec = EngineCreator.from_json(
+        json_file="...",
+        json_path="...",
+        key_mapping={
+            "host": "your-host-field",
+            "port": "your-port-field",
+            "database": "your-database-field",
+            "username": "your-username-field",
+            "password": "your-password-field",
+        }
+    )
 
 
 From ``$HOME/.db.json``
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+API :meth:`~sqlalchemy_mate.credential.Credential.from_home_db_json`.
+
+You can put lots of database connection info in a ``.db.json`` file in your ``$HOME`` directory.
 
 .. code-block:: python
 
@@ -117,7 +148,7 @@ From ``$HOME/.db.json``
     ec = EngineCreator.from_home_db_json(identifier="db1")
     engine = ec.create_postgresql_psycopg2()
 
-``$HOME/.db.json`` **assumes flat json schema**:
+``$HOME/.db.json`` **assumes flat json schema**, but you can use dot notation json path for ``identifier`` to adapt any json schema:
 
 .. code-block:: python
 
@@ -137,6 +168,9 @@ From ``$HOME/.db.json``
 
 From json file on AWS S3
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+API :meth:`~sqlalchemy_mate.credential.Credential.from_s3_json`.
+
+This is similar to ``from_json``, but the json is stored on AWS S3.
 
 .. code-block:: python
 
@@ -152,6 +186,17 @@ From json file on AWS S3
 
 From Environment Variable
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+API :meth:`~sqlalchemy_mate.credential.Credential.from_env`.
+
+You can put your credentials in Environment Variable. For example:
+
+.. code-block:: bash
+
+    export DB_DEV_HOST="..."
+    export DB_DEV_PORT="..."
+    export DB_DEV_DATABASE="..."
+    export DB_DEV_USERNAME="..."
+    export DB_DEV_PASSWORD="..."
 
 .. code-block:: python
 

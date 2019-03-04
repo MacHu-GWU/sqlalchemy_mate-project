@@ -18,13 +18,16 @@ with open(json_file, "wb") as f:
 
 class TestCredential(object):
     def test_uri(self):
-        cred = Credential(host="host", port=1234, database="dev", username="user", password="pass")
+        cred = Credential(host="host", port=1234, database="dev",
+                          username="user", password="pass")
         assert cred.uri == "user:pass@host:1234/dev"
 
-        cred = Credential(host="host", port=1234, database="dev", username="user")
+        cred = Credential(host="host", port=1234,
+                          database="dev", username="user")
         assert cred.uri == "user@host:1234/dev"
 
-        cred = Credential(host="host", database="dev", username="user", password="pass")
+        cred = Credential(host="host", database="dev",
+                          username="user", password="pass")
         assert cred.uri == "user:pass@host/dev"
 
         cred = Credential(host="host", database="dev", username="user")
@@ -46,6 +49,9 @@ class TestCredential(object):
         assert cred.uri == "user:pass@host:1234/dev"
         cred = Credential.from_env(prefix="DB_")
         assert cred.uri == "user:pass@host:1234/dev"
+
+        with raises(ValueError):
+            Credential.from_env(prefix="")
 
         with raises(ValueError):
             Credential.from_env(prefix="db")
@@ -76,7 +82,8 @@ class TestCredential(object):
                 username="user", password="pass"
             )
         )
-        assert new_data == dict(host=1, port=2, database=3, username=4, password=5)
+        assert new_data == dict(
+            host=1, port=2, database=3, username=4, password=5)
 
 
 class TestEngineCreator(object):

@@ -60,27 +60,27 @@ class TestExtendedBase(object):
 
     def test_to_OrderedDict(self):
         assert User(id=1, name="Alice").to_OrderedDict(include_null=True) == \
-               OrderedDict([
+            OrderedDict([
                    ("id", 1), ("name", "Alice"),
-               ])
+            ])
 
         assert User(id=1).to_OrderedDict(include_null=True) == \
-               OrderedDict([
+            OrderedDict([
                    ("id", 1), ("name", None),
-               ])
+            ])
         assert User(id=1).to_OrderedDict(include_null=False) == \
-               OrderedDict([
+            OrderedDict([
                    ("id", 1),
-               ])
+            ])
 
         assert User(name="Alice").to_OrderedDict(include_null=True) == \
-               OrderedDict([
+            OrderedDict([
                    ("id", None), ("name", "Alice"),
-               ])
+            ])
         assert User(name="Alice").to_OrderedDict(include_null=False) == \
-               OrderedDict([
+            OrderedDict([
                    ("name", "Alice"),
-               ])
+            ])
 
     def test_glance(self):
         user = User(id=1, name="Alice")
