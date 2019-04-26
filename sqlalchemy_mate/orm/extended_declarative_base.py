@@ -12,6 +12,7 @@ from collections import OrderedDict
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import FlushError
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.inspection import inspect
 
 try:
@@ -50,6 +51,42 @@ class ExtendedBase(object):
     _cache_keys = None
 
     _settings_major_attrs = None  # type: list
+    _settings_engine = None  # type: Engine
+
+    _long_live_session = None  # type: Session
+
+    @classmethod
+    def make_session(cls):
+        if cls._settings_engine is None:
+            raise TypeError
+        if not isinstance(cls._settings_engine, Engine):
+            raise TypeError
+        try:
+            cls.close_session().close()
+        except:
+            pass
+        cls._long_live_session = sessionmaker(bind=cls._settings_engine)()
+
+    @classmethod
+    def close_session(cls):
+        cls._long_live_session.close()
+        cls._long_live_session = None
+
+    @classmethod
+    def get_eng(cls):
+        if cls._settings_engine is None:
+            raise NotImplementedError("you have to specify the engine at `_settings_engine` attribute!")
+        return cls._settings_engine
+
+    get_engine = get_eng
+
+    @classmethod
+    def get_ses(cls):
+        if cls._long_live_session is None:
+            cls.make_session()
+        return cls._long_live_session
+
+    get_session = get_ses
 
     @classmethod
     def _get_primary_key_names(cls):
@@ -273,6 +310,11 @@ class ExtendedBase(object):
 
         :return: number of insertion operation been executed. Usually it is
             greatly smaller than ``len(data)``.
+
+        .. warning::
+
+            This operation is not atomic, if you force stop the program,
+            then it could be only partially completed
 
         **中文文档**
 

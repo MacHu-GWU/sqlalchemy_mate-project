@@ -29,6 +29,8 @@ class PostTagAssociation(Base, ExtendedBase):
     tag_id = Column(Integer, primary_key=True)
     description = Column(String)
 
+    _settings_engine = engine
+
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
@@ -71,16 +73,28 @@ class TestExtendedBaseEdgeCase(object):
 
     def test_by_id(self):
         PostTagAssociation.smart_insert(
-            self.ses, [
+            PostTagAssociation.get_eng(), [
                 PostTagAssociation(post_id=1, tag_id=1, description="1-1"),
                 PostTagAssociation(post_id=1, tag_id=2, description="1-2"),
-                PostTagAssociation(post_id=1, tag_id=3, description="1-3"),
             ]
         )
+        PostTagAssociation.smart_insert(
+            PostTagAssociation.get_ses(), [
+                PostTagAssociation(post_id=1, tag_id=3, description="1-3"),
+                PostTagAssociation(post_id=1, tag_id=4, description="1-4"),
+            ]
+        )
+
         pta = PostTagAssociation.by_id((1, 2), self.ses)
         assert pta.post_id == 1
         assert pta.tag_id == 2
 
+    def test_engine_and_session(self):
+        PostTagAssociation.make_session()
+        PostTagAssociation.close_session()
+        PostTagAssociation.get_eng()
+        PostTagAssociation.get_ses()
+        PostTagAssociation.close_session()
 
 if __name__ == "__main__":
     import os

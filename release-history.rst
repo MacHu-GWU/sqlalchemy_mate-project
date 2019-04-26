@@ -25,6 +25,7 @@ Release and Version History
 **Minor Improvements**
 
 - More edge case test
+- allo user to assign engine to ``ExtendedBase._settings_engine`` and then access engine and session with ``ExtendedBase.get_eng()``, ``ExtendedBase.get_ses()``
 
 **Bugfixes**
 

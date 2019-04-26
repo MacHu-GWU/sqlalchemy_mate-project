@@ -79,6 +79,8 @@ If you want to read db secret from other source, such as Bash Scripts that havin
 From json file
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+You can put your credential in a json file somewhere in your $HOME directory, and let sqlalchemy_mate smartly load from it.
+
 API :meth:`~sqlalchemy_mate.credential.Credential.from_json`.
 
 You need to specify two things:
@@ -173,7 +175,7 @@ From json file on AWS S3
 
 API :meth:`~sqlalchemy_mate.credential.Credential.from_s3_json`.
 
-This is similar to ``from_json``, but the json is stored on AWS S3.
+This is similar to ``from_json``, but the json file is stored on AWS S3.
 
 .. code-block:: python
 

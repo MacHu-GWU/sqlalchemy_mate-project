@@ -10,7 +10,7 @@ from sqlalchemy.orm.session import Session
 from sqlalchemy.engine.base import Engine
 
 try:
-    from typing import Union, Tuple
+    from typing import Type, Union, Tuple
 except ImportError:  # pragma: no cover
     pass
 
@@ -55,6 +55,9 @@ def grouper_list(l, n):
         yield chunk
 
 
+session_klass_cache = dict()  # type: Dict[int, Type[Session]]
+
+
 def ensure_session(engine_or_session):
     """
     If it is an engine, then create a session from it. And indicate that
@@ -64,7 +67,12 @@ def ensure_session(engine_or_session):
     :rtype: Tuple[Session, bool]
     """
     if isinstance(engine_or_session, Engine):
-        ses = sessionmaker(bind=engine_or_session)()
+        engine_id = id(engine_or_session)
+        if id(engine_id) in session_klass_cache:
+            SessionClass = session_klass_cache[engine_id]
+        else:
+            SessionClass = sessionmaker(bind=engine_or_session)
+        ses = SessionClass()
         auto_close = True
         return ses, auto_close
     elif isinstance(engine_or_session, Session):
