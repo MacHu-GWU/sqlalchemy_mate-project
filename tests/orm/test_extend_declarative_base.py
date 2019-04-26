@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import pytest
@@ -30,12 +29,30 @@ class User(Base, ExtendedBase):
     name = Column(String, unique=True)
 
 
+class Order(Base, ExtendedBase):
+    __tablename__ = "extended_declarative_base_order"
+
+    id = Column(Integer, primary_key=True)
+
+
 Base.metadata.create_all(engine)
 
 Session = sessionmaker(bind=engine)
 
 
-class TestExtendedBase(object):
+class TestBase(object):
+    ses = None
+
+    @classmethod
+    def setup_class(cls):
+        cls.ses = Session()
+
+    @classmethod
+    def teardown_class(cls):
+        cls.ses.close()
+
+
+class TestExtendedBase(TestBase):
     def test_keys(self):
         assert User.keys() == ["id", "name"]
         assert User(id=1).keys() == ["id", "name"]
@@ -60,27 +77,27 @@ class TestExtendedBase(object):
 
     def test_to_OrderedDict(self):
         assert User(id=1, name="Alice").to_OrderedDict(include_null=True) == \
-            OrderedDict([
+               OrderedDict([
                    ("id", 1), ("name", "Alice"),
-            ])
+               ])
 
         assert User(id=1).to_OrderedDict(include_null=True) == \
-            OrderedDict([
+               OrderedDict([
                    ("id", 1), ("name", None),
-            ])
+               ])
         assert User(id=1).to_OrderedDict(include_null=False) == \
-            OrderedDict([
+               OrderedDict([
                    ("id", 1),
-            ])
+               ])
 
         assert User(name="Alice").to_OrderedDict(include_null=True) == \
-            OrderedDict([
+               OrderedDict([
                    ("id", None), ("name", "Alice"),
-            ])
+               ])
         assert User(name="Alice").to_OrderedDict(include_null=False) == \
-            OrderedDict([
+               OrderedDict([
                    ("name", "Alice"),
-            ])
+               ])
 
     def test_glance(self):
         user = User(id=1, name="Alice")
@@ -245,6 +262,20 @@ class TestExtendedBase(object):
         result[1].name == "Bob"
 
         ses.close()
+
+
+class TestOrder(TestBase):
+    def test(self):
+        n_order = 100
+
+        Order.smart_insert(self.ses, [Order(id=id) for id in range(1, n_order + 1)])
+        result1 = Order.random(self.ses, 3)
+        assert len(result1)
+
+        result2 = Order.random(self.ses, 3)
+        assert len(result2)
+
+        assert result1[0].id != result2[0].id
 
 
 if __name__ == "__main__":

@@ -8,10 +8,21 @@ from collections import OrderedDict
 from sqlalchemy import and_
 from ..utils import ensure_list
 
+try:  # for type hint only
+    from sqlalchemy import Table
+    from sqlalchemy.engine import Engine
+except ImportError:  # pragma: no cover
+    pass
+
 
 def update_all(engine, table, data, upsert=False):
     """
     Update data by its primary_key column.
+
+    :type engine: Engine
+    :type table: Table
+    :type data: list
+    :type upsert: bool
     """
     data = ensure_list(data)
 
@@ -77,6 +88,10 @@ def upsert_all(engine, table, data):
         >>> upsert_all(engine, table_user, data)
         >>> engine.execute(select([table_user])).fetchall()
         [{"id": 1, "name": "Bob"}, {"id": 2, "name": "Cathy"}]
+
+    :type engine: Engine
+    :type table: Table
+    :type data: list
 
     **中文文档**
 

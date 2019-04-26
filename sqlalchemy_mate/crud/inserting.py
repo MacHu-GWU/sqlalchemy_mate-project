@@ -12,11 +12,23 @@ try:
 except:  # pragma: no cover
     from sqlalchemy_mate.utils import grouper_list
 
+try:  # for type hint only
+    from sqlalchemy import Table
+    from sqlalchemy.engine import Engine
+except ImportError:  # pragma: no cover
+    pass
+
 
 def smart_insert(engine, table, data, minimal_size=5, op_counter=0):
     """
     An optimized Insert strategy. Guarantee successful and highest insertion
     speed. But ATOMIC WRITE IS NOT ENSURED IF THE PROGRAM IS INTERRUPTED.
+
+    :type engine: Engine
+    :type table: Table
+    :type data: list
+    :type minimal_size: int
+    :type op_counter: int
 
     **中文文档**
 

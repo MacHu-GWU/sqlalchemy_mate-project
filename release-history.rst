@@ -4,8 +4,8 @@ Release and Version History
 ===========================
 
 
-0.0.9 (TODO)
-~~~~~~~~~~~~
+0.0.10 (TODO)
+~~~~~~~~~~~~~
 **Features and Improvements**
 
 **Minor Improvements**
@@ -13,6 +13,24 @@ Release and Version History
 **Bugfixes**
 
 **Miscellaneous**
+
+
+0.0.9 (2019-04-26)
+~~~~~~~~~~~~~~~~~~
+**Features and Improvements**
+
+- pretty table ``from_everything`` now support textual sql
+- add ``ExtendedBase.random()`` method
+
+**Minor Improvements**
+
+- More edge case test
+
+**Bugfixes**
+
+**Miscellaneous**
+
+- include type hint!
 
 
 0.0.8 (2019-03-04)

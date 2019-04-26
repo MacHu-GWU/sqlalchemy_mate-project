@@ -5,6 +5,14 @@ Utilities function.
 """
 
 import sqlalchemy as sa
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.session import Session
+from sqlalchemy.engine.base import Engine
+
+try:
+    from typing import Union, Tuple
+except ImportError:  # pragma: no cover
+    pass
 
 
 def ensure_list(item):
@@ -45,6 +53,24 @@ def grouper_list(l, n):
             counter = 0
     if len(chunk) > 0:
         yield chunk
+
+
+def ensure_session(engine_or_session):
+    """
+    If it is an engine, then create a session from it. And indicate that
+    this session should be closed after the job done.
+
+    :type engine_or_session: Union[Engine, Session]
+    :rtype: Tuple[Session, bool]
+    """
+    if isinstance(engine_or_session, Engine):
+        ses = sessionmaker(bind=engine_or_session)()
+        auto_close = True
+        return ses, auto_close
+    elif isinstance(engine_or_session, Session):
+        ses = engine_or_session
+        auto_close = False
+        return ses, auto_close
 
 
 def convert_query_to_sql_statement(query):

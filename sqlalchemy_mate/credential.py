@@ -8,6 +8,10 @@ import os
 import json
 import string
 import sqlalchemy as sa
+try:
+    from sqlalchemy.engine import Engine
+except ImportError:  # pragma: no cover
+    pass
 
 
 class Credential(object):
@@ -15,8 +19,12 @@ class Credential(object):
     Database credential.
     """
 
-    def __init__(self, host=None, port=None, database=None,
-                 username=None, password=None):
+    def __init__(self,
+                 host=None,
+                 port=None,
+                 database=None,
+                 username=None,
+                 password=None):
         self.host = host
         self.port = port
         self.database = database
@@ -83,6 +91,8 @@ class Credential(object):
         :param json_path: str, dot notation of the path to the credential dict.
         :param key_mapping: dict, map 'host', 'port', 'database', 'username', 'password'
             to custom alias, for example ``{'host': 'h', 'port': 'p', 'database': 'db', 'username': 'user', 'password': 'pwd'}``. This params are used to adapt any json data.
+
+        :rtype:
         :return:
 
         Example:
@@ -121,7 +131,10 @@ class Credential(object):
         """
         Read credential from $HOME/.db.json file.
 
+        :type identifier: str
         :param identifier: str, database identifier.
+
+        :type key_mapping: Dict[str, str]
         :param key_mapping: dict
 
         ``.db.json````::
@@ -256,19 +269,25 @@ class EngineCreator(Credential):  # pragma: no cover
         # postgresql
         engine = EngineCreator.from_home_db_json("mydb").create_postgresql()
     """
+
     def create_connect_str(self, dialect_and_driver):
         return "{}://{}".format(dialect_and_driver, self.uri)
 
     _ccs = create_connect_str
 
     def create_engine(self, conn_str, **kwargs):
+        """
+        :rtype: Engine
+        """
         return sa.create_engine(conn_str, **kwargs)
 
     _ce = create_engine
 
     @classmethod
     def create_sqlite(cls, path=":memory:", **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return sa.create_engine("sqlite:///{path}".format(path=path), **kwargs)
 
     class DialectAndDriver(object):
@@ -292,106 +311,141 @@ class EngineCreator(Credential):  # pragma: no cover
 
     # postgresql
     def create_postgresql(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.psql), **kwargs
         )
 
     def create_postgresql_psycopg2(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.psql_psycopg2), **kwargs
         )
 
     def create_postgresql_pg8000(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.psql_pg8000), **kwargs
         )
 
     def _create_postgresql_pygresql(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.psql_pygresql), **kwargs
         )
 
     def create_postgresql_psycopg2cffi(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.psql_psycopg2cffi), **kwargs
         )
 
     def create_postgresql_pypostgresql(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.psql_pypostgresql), **kwargs
         )
 
     # mysql
     def create_mysql(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.mysql), **kwargs
         )
 
     def create_mysql_mysqldb(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.mysql_mysqldb), **kwargs
         )
 
     def create_mysql_mysqlconnector(self, **kwargs):
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.mysql_mysqlconnector), **kwargs
         )
 
     def create_mysql_oursql(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.mysql_oursql), **kwargs
         )
 
     def create_mysql_pymysql(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.mysql_pymysql), **kwargs
         )
 
     def create_mysql_cymysql(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.mysql_cymysql), **kwargs
         )
 
     # oracle
     def create_oracle(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.oracle), **kwargs
         )
 
     def create_oracle_cx_oracle(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.oracle_cx_oracle), **kwargs
         )
 
     # mssql
     def create_mssql_pyodbc(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.mssql_pyodbc), **kwargs
         )
 
     def create_mssql_pymssql(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.mssql_pymssql), **kwargs
         )
 
     # redshift
     def create_redshift(self, **kwargs):
-        """"""
+        """
+        :rtype: Engine
+        """
         return self._ce(
             self._ccs(self.DialectAndDriver.redshift_psycopg2), **kwargs
         )

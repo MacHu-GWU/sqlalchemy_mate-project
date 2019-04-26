@@ -51,7 +51,7 @@
 Welcome to ``sqlalchemy_mate`` Documentation
 ==============================================================================
 
-A library extend sqlalchemy module, makes CRUD easier.
+A library extend sqlalchemy module, save you from writing 50% database.
 
 
 Features
@@ -72,6 +72,8 @@ Read Database Credential Safely
 Put your database connection credential in your source code is always a **BAD IDEA**.
 
 ``sqlalchemy_mate`` provides several options to allow loading credential easily.
+
+If you want to read db secret from other source, such as Bash Scripts that having lots of ``export DB_PASSWORD="xxx"``, AWS Secret Manager, AWS Key Management System (KMS), please take a look at my another project `pysecret <https://pypi.org/project/pysecret/>`_.
 
 
 From json file
@@ -168,6 +170,7 @@ You can put lots of database connection info in a ``.db.json`` file in your ``$H
 
 From json file on AWS S3
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 API :meth:`~sqlalchemy_mate.credential.Credential.from_s3_json`.
 
 This is similar to ``from_json``, but the json is stored on AWS S3.
@@ -175,7 +178,6 @@ This is similar to ``from_json``, but the json is stored on AWS S3.
 .. code-block:: python
 
     from sqlalchemy_mate import EngineCreator
-
     ec = EngineCreator.from_s3_json(
         bucket_name="my-bucket", key="db.json",
         json_path="identifier1",
@@ -186,6 +188,7 @@ This is similar to ``from_json``, but the json is stored on AWS S3.
 
 From Environment Variable
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 API :meth:`~sqlalchemy_mate.credential.Credential.from_env`.
 
 You can put your credentials in Environment Variable. For example:
@@ -201,7 +204,7 @@ You can put your credentials in Environment Variable. For example:
 .. code-block:: python
 
     from sqlalchemy_mate import EngineCreator
-
+    # read from DB_DEV_USERNAME, DB_DEV_PASSWORD, ...
     ec = EngineCreator.from_env(prefix="DB_DEV")
     engine = ec.create_redshift()
 
@@ -236,7 +239,6 @@ With sql expression:
 .. code-block:: python
 
     from sqlalchemy_mate import inserting
-
     engine = create_engine(...)
     t_users = Table(
         "users", metadata,
@@ -245,7 +247,7 @@ With sql expression:
     )
     # lots of data
     data = [{"id": 1, "name": "Alice}, {"id": 2, "name": "Bob"}, ...]
-
+    # the magic function
     inserting.smart_insert(engine, t_users, data)
 
 
@@ -254,15 +256,12 @@ With ORM:
 .. code-block:: python
 
     from sqlalchemy_mate import ExtendedBase
-
     Base = declarative_base()
-
     class User(Base, ExtendedBase): # inherit from ExtendedBase
         ...
-
     # lots of users
     data = [User(id=1, name="Alice"), User(id=2, name="Bob"), ...]
-
+    # the magic method
     User.smart_insert(engine_or_session, data) # That's it
 
 
@@ -273,14 +272,15 @@ Automatically update value by primary key.
 
 .. code-block:: python
 
-    # in sql expression
+    # in SQL expression
+    #
     from sqlalchemy_mate import updating
-
+    data = [{"id": 1, "name": "Alice}, {"id": 2, "name": "Bob"}, ...]
     updating.update_all(engine, table, data)
     updating.upsert_all(engine, table, data)
-
     # in ORM
-
+    #
+    data = [User(id=1, name="Alice"), User(id=2, name="Bob"), ...]
     User.update_all(engine_or_session, user_list)
     User.upsert_all(engine_or_session, user_list)
 

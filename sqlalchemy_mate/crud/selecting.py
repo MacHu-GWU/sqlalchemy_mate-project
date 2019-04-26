@@ -6,11 +6,6 @@ This module provide utility functions for select operation.
 
 from sqlalchemy import select, func, Column
 
-try:
-    from ..pkg.prettytable import from_db_cursor
-except:  # pragma: no cover
-    from sqlalchemy_mate.pkg.prettytable import from_db_cursor
-
 
 def count_row(engine, table):
     """

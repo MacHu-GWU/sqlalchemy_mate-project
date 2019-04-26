@@ -4,6 +4,10 @@ from ._version import __version__
 
 __short_description__ = "A library extend sqlalchemy module, makes CRUD easier."
 __license__ = "MIT"
+__author__ = "Sanhe Hu"
+__author_email__ = "husanhe@gmail.com"
+__github_username__ = "MacHu-GWU"
+
 
 try:
     from . import engine_creator, io, pt
@@ -12,5 +16,7 @@ try:
     from .crud import selecting, inserting, updating
     from .orm.extended_declarative_base import ExtendedBase
     from timeout_decorator import TimeoutError
-except:  # pragma: no cover
-    pass
+except ImportError as e:  # pragma: no cover
+    print(e)
+except Exception as e:  # pragma: no cover
+    raise e
