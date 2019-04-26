@@ -81,8 +81,6 @@ From json file
 
 You can put your credential in a json file somewhere in your $HOME directory, and let sqlalchemy_mate smartly load from it.
 
-API :meth:`~sqlalchemy_mate.credential.Credential.from_json`.
-
 You need to specify two things:
 
 1. path to json file.
@@ -141,8 +139,6 @@ If your json schema is different, you need to add the ``key_mapping`` to **speci
 From ``$HOME/.db.json``
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-API :meth:`~sqlalchemy_mate.credential.Credential.from_home_db_json`.
-
 You can put lots of database connection info in a ``.db.json`` file in your ``$HOME`` directory.
 
 .. code-block:: python
@@ -173,8 +169,6 @@ You can put lots of database connection info in a ``.db.json`` file in your ``$H
 From json file on AWS S3
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-API :meth:`~sqlalchemy_mate.credential.Credential.from_s3_json`.
-
 This is similar to ``from_json``, but the json file is stored on AWS S3.
 
 .. code-block:: python
@@ -190,8 +184,6 @@ This is similar to ``from_json``, but the json file is stored on AWS S3.
 
 From Environment Variable
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-API :meth:`~sqlalchemy_mate.credential.Credential.from_env`.
 
 You can put your credentials in Environment Variable. For example:
 

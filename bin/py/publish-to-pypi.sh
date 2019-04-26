@@ -18,6 +18,3 @@ rm_if_exists $path_egg_dir
     ${bin_python} setup.py sdist bdist_wheel --universal;
     ${bin_twine} upload dist/*;
 )
-rm_if_exists $path_build_dir
-rm_if_exists $path_dist_dir
-rm_if_exists $path_egg_dir
