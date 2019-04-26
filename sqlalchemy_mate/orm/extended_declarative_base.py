@@ -57,9 +57,9 @@ class ExtendedBase(object):
 
     @classmethod
     def make_session(cls):
-        if cls._settings_engine is None:
+        if cls._settings_engine is None:  # pragma: no cover
             raise TypeError
-        if not isinstance(cls._settings_engine, Engine):
+        if not isinstance(cls._settings_engine, Engine): # pragma: no cover
             raise TypeError
         try:
             cls.close_session().close()
@@ -74,7 +74,7 @@ class ExtendedBase(object):
 
     @classmethod
     def get_eng(cls):
-        if cls._settings_engine is None:
+        if cls._settings_engine is None: # pragma: no cover
             raise NotImplementedError("you have to specify the engine at `_settings_engine` attribute!")
         return cls._settings_engine
 

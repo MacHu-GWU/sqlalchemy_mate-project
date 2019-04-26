@@ -68,9 +68,9 @@ def ensure_session(engine_or_session):
     """
     if isinstance(engine_or_session, Engine):
         engine_id = id(engine_or_session)
-        if id(engine_id) in session_klass_cache:
+        if id(engine_id) in session_klass_cache: # pragma: no cover
             SessionClass = session_klass_cache[engine_id]
-        else:
+        else:  # pragma: no cover
             SessionClass = sessionmaker(bind=engine_or_session)
         ses = SessionClass()
         auto_close = True
