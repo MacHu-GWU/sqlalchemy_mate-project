@@ -3,7 +3,7 @@
 #
 # Publish this Package to https://pypi.org/
 
-dir_here="$( cd "$(dirname "$0")" ; pwd -P )"
+dir_here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 dir_bin="$(dirname "${dir_here}")"
 dir_project_root=$(dirname "${dir_bin}")
 
@@ -18,3 +18,6 @@ rm_if_exists $path_egg_dir
     ${bin_python} setup.py sdist bdist_wheel --universal;
     ${bin_twine} upload dist/*;
 )
+rm_if_exists $path_build_dir
+rm_if_exists $path_dist_dir
+rm_if_exists $path_egg_dir
