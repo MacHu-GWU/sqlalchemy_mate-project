@@ -33,7 +33,13 @@ except ImportError:  # pragma: no cover
     pass
 
 
-class ExtendedBase(object):
+
+from sqlalchemy.ext.declarative import declarative_base
+
+
+Base = declarative_base()
+
+class ExtendedBase(Base):
     """
     Provide additional method.
 
@@ -46,6 +52,8 @@ class ExtendedBase(object):
         class User(Base, ExtendedBase):
             ... do what you do with sqlalchemy ORM
     """
+    __abstract__ = True
+
     _cache_pk_names = None
     _cache_id_field_name = None
     _cache_keys = None
