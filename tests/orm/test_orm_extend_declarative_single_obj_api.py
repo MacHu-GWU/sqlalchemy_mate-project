@@ -52,7 +52,7 @@ class TestBase(object):
 
 
 class TestExtendedBase(TestBase):
-    def test_by_id(self):
+    def test_by_pk(self):
         engine.execute(User.__table__.delete())
         user = User(id=1, name="Michael Jackson")
         User.smart_insert(engine, user)
