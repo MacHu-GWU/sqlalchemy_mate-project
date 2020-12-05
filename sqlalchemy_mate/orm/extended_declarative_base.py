@@ -134,6 +134,7 @@ class ExtendedBase(Base):
         """
         return tuple([getattr(self, name) for name in self.pk_names()])
 
+    # id_field_xxx() method are only valid if there's only one primary key
     @classmethod
     def id_field_name(cls):
         """
