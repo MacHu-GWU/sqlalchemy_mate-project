@@ -117,7 +117,7 @@ def execute_query_return_result_proxy(query):
 
 
 def test_connection(engine, timeout=3):
-    import timeout_decorator
+    from .pkg import timeout_decorator
 
     @timeout_decorator.timeout(timeout)
     def test(engine):
