@@ -26,6 +26,7 @@ Release and Version History
 **Minor Improvements**
 
 - move CI to GitHub Action.
+- add unit test on Windows
 
 **Bugfixes**
 
