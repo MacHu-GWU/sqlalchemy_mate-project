@@ -157,9 +157,9 @@ class TestExtendedBase(TestBase):
         ses.commit()
         assert ses.query(User).count() == len(exist_data)
 
-        st = time.clock()
+        st = time.process_time()
         op_counter = User.smart_insert(ses, all_data)
-        elapse1 = time.clock() - st
+        elapse1 = time.process_time() - st
 
         assert ses.query(User).count() == n_all
 
@@ -175,7 +175,7 @@ class TestExtendedBase(TestBase):
         ses.commit()
         assert ses.query(User).count() == len(exist_data)
 
-        st = time.clock()
+        st = time.process_time()
         for user in all_data:
             try:
                 ses.add(user)
@@ -184,7 +184,7 @@ class TestExtendedBase(TestBase):
                 ses.rollback()
             except FlushError:
                 ses.rollback()
-        elapse2 = time.clock() - st
+        elapse2 = time.process_time() - st
 
         assert ses.query(User).count() == n_all
 

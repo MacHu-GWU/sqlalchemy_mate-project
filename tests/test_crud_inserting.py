@@ -37,9 +37,9 @@ def test_smart_insert():
     engine.execute(ins, exist_data)
     assert count_row(engine, t_smart_insert) == len(exist_id_list)
 
-    st = time.clock()
+    st = time.process_time()
     smart_insert(engine, t_smart_insert, all_data, 5)
-    elapse1 = time.clock() - st
+    elapse1 = time.process_time() - st
 
     assert count_row(engine, t_smart_insert) == n_all
 
@@ -49,13 +49,13 @@ def test_smart_insert():
     engine.execute(ins, exist_data)
     assert count_row(engine, t_smart_insert) == len(exist_id_list)
 
-    st = time.clock()
+    st = time.process_time()
     for row in all_data:
         try:
             engine.execute(ins, row)
         except IntegrityError:
             pass
-    elapse2 = time.clock() - st
+    elapse2 = time.process_time() - st
 
     assert count_row(engine, t_smart_insert) == n_all
 
