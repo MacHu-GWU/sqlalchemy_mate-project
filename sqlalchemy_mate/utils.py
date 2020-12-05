@@ -119,7 +119,7 @@ def execute_query_return_result_proxy(query):
 def test_connection(engine, timeout=3):
     from .pkg import timeout_decorator
 
-    @timeout_decorator.timeout(timeout)
+    @timeout_decorator.timeout(timeout, use_signals=False)
     def test(engine):
         v = engine.execute(sa.text("SELECT 1;")).fetchall()[0][0]
         assert v == 1
