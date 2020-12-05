@@ -85,7 +85,7 @@ class TestExtendedBaseEdgeCase(object):
             ]
         )
 
-        pta = PostTagAssociation.by_id((1, 2), self.ses)
+        pta = PostTagAssociation.by_pk((1, 2), self.ses)
         assert pta.post_id == 1
         assert pta.tag_id == 2
 
