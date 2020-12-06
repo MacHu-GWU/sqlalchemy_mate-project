@@ -1,320 +1,457 @@
 # -*- coding: utf-8 -*-
 
 """
-This module provides functionary interface to create engine.
+Safe database credential loader.
 """
 
-from sqlalchemy import create_engine
+import os
+import json
+import string
+import sqlalchemy as sa
+try:
+    from sqlalchemy.engine import Engine
+except ImportError:  # pragma: no cover
+    pass
 
 
-def preprocess_driver(driver=None):
-    if driver is None:
-        return ""
-    else:
-        return "+%s" % driver
+class EngineCreator(object): # pragma: no cover
+    """
+    Tired of looking up docs on https://docs.sqlalchemy.org/en/latest/core/engines.html?
+
+    ``EngineCreator`` creates sqlalchemy engine in one line:
+
+    Example::
+
+        from sqlalchemy_mate import EngineCreator
+
+        # sqlite in memory
+        engine = EngineCreator.create_sqlite()
+
+        # postgresql
+        engine = EngineCreator.from_home_db_json("mydb").create_postgresql()
+    """
+
+    def __init__(self,
+                 host=None,
+                 port=None,
+                 database=None,
+                 username=None,
+                 password=None):
+        self.host = host
+        self.port = port
+        self.database = database
+        self.username = username
+        self.password = password
+
+    uri_template = "{username}{has_password}{password}@{host}{has_port}{port}/{database}"
+    path_db_json = os.path.join(os.path.expanduser("~"), ".db.json")
+    local_home = os.path.basename(os.path.expanduser("~"))
+
+    def __repr__(self):
+        return "{classname}(host='{host}', port={port}, database='{database}', username={username}, password='xxxxxxxxxxxx')".format(
+            classname=self.__class__.__name__,
+            host=self.host, port=self.port,
+            database=self.database, username=self.username,
+        )
+
+    @property
+    def uri(self):
+        """
+        Return sqlalchemy connect string URI.
+        """
+        return self.uri_template.format(
+            host=self.host,
+            port="" if self.port is None else self.port,
+            database=self.database,
+            username=self.username,
+            password="" if self.password is None else self.password,
+            has_password="" if self.password is None else ":",
+            has_port="" if self.port is None else ":",
+        )
+
+    @classmethod
+    def _validate_key_mapping(cls, key_mapping):
+        if key_mapping is not None:
+            keys = list(key_mapping)
+            keys.sort()
+            if keys != ["database", "host", "password", "port", "username"]:
+                msg = ("`key_mapping` is the credential field mapping from `Credential` to custom json! "
+                       "it has to be a dictionary with 5 keys: "
+                       "host, port, password, port, username!")
+                raise ValueError(msg)
+
+    @classmethod
+    def _transform(cls, data, key_mapping):
+        if key_mapping is None:
+            return data
+        else:
+            return {actual: data[custom] for actual, custom in key_mapping.items()}
+
+    @classmethod
+    def _from_json_data(cls, data, json_path=None, key_mapping=None):
+        if json_path is not None:
+            for p in json_path.split("."):
+                data = data[p]
+        return cls(**cls._transform(data, key_mapping))
+
+    @classmethod
+    def from_json(cls, json_file, json_path=None, key_mapping=None):
+        """
+        Load connection credential from json file.
+
+        :param json_file: str, path to json file
+        :param json_path: str, dot notation of the path to the credential dict.
+        :param key_mapping: dict, map 'host', 'port', 'database', 'username', 'password'
+            to custom alias, for example ``{'host': 'h', 'port': 'p', 'database': 'db', 'username': 'user', 'password': 'pwd'}``. This params are used to adapt any json data.
+
+        :rtype:
+        :return:
+
+        Example:
+
+        Your json file::
+
+            {
+                "credentials": {
+                    "db1": {
+                        "h": "example.com",
+                        "p": 1234,
+                        "db": "test",
+                        "user": "admin",
+                        "pwd": "admin",
+                    },
+                    "db2": {
+                        ...
+                    }
+                }
+            }
+
+        Usage::
+
+            cred = Credential.from_json(
+                "path-to-json-file", "credentials.db1",
+                dict(host="h", port="p", database="db", username="user", password="pwd")
+            )
+        """
+        cls._validate_key_mapping(key_mapping)
+        with open(json_file, "rb") as f:
+            data = json.loads(f.read().decode("utf-8"))
+            return cls._from_json_data(data, json_path, key_mapping)
+
+    @classmethod
+    def from_home_db_json(cls, identifier, key_mapping=None):  # pragma: no cover
+        """
+        Read credential from $HOME/.db.json file.
+
+        :type identifier: str
+        :param identifier: str, database identifier.
+
+        :type key_mapping: Dict[str, str]
+        :param key_mapping: dict
+
+        ``.db.json````::
+
+            {
+                "identifier1": {
+                    "host": "example.com",
+                    "port": 1234,
+                    "database": "test",
+                    "username": "admin",
+                    "password": "admin",
+                },
+                "identifier2": {
+                    ...
+                }
+            }
+        """
+        return cls.from_json(
+            json_file=cls.path_db_json, json_path=identifier, key_mapping=key_mapping)
+
+    @classmethod
+    def from_s3_json(cls, bucket_name, key,
+                     json_path=None, key_mapping=None,
+                     aws_profile=None,
+                     aws_access_key_id=None,
+                     aws_secret_access_key=None,
+                     region_name=None):  # pragma: no cover
+        """
+        Load database credential from json on s3.
+
+        :param bucket_name: str
+        :param key: str
+        :param aws_profile: if None, assume that you are using this from
+            AWS cloud. (service on the same cloud doesn't need profile name)
+        :param aws_access_key_id: str, not recommend to use
+        :param aws_secret_access_key: str, not recommend to use
+        :param region_name: str
+        """
+        import boto3
+
+        ses = boto3.Session(
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            region_name=region_name,
+            profile_name=aws_profile,
+        )
+        s3 = ses.resource("s3")
+        bucket = s3.Bucket(bucket_name)
+        object = bucket.Object(key)
+        data = json.loads(object.get()["Body"].read().decode("utf-8"))
+        return cls._from_json_data(data, json_path, key_mapping)
+
+    @classmethod
+    def from_env(cls, prefix, kms_decrypt=False, aws_profile=None):
+        """
+        Load database credential from env variable.
+
+        - host: ENV.{PREFIX}_HOST
+        - port: ENV.{PREFIX}_PORT
+        - database: ENV.{PREFIX}_DATABASE
+        - username: ENV.{PREFIX}_USERNAME
+        - password: ENV.{PREFIX}_PASSWORD
+
+        :param prefix: str
+        :param kms_decrypt: bool
+        :param aws_profile: str
+        """
+        if len(prefix) < 1:
+            raise ValueError("prefix can't be empty")
+
+        if len(set(prefix).difference(set(string.ascii_uppercase + "_"))):
+            raise ValueError("prefix can only use [A-Z] and '_'!")
+
+        if not prefix.endswith("_"):
+            prefix = prefix + "_"
+
+        data = dict(
+            host=os.getenv(prefix + "HOST"),
+            port=os.getenv(prefix + "PORT"),
+            database=os.getenv(prefix + "DATABASE"),
+            username=os.getenv(prefix + "USERNAME"),
+            password=os.getenv(prefix + "PASSWORD"),
+        )
+        if kms_decrypt is True:  # pragma: no cover
+            import boto3
+            from base64 import b64decode
+
+            if aws_profile is not None:
+                kms = boto3.client("kms")
+            else:
+                ses = boto3.Session(profile_name=aws_profile)
+                kms = ses.client("kms")
+
+            def decrypt(kms, text):
+                return kms.decrypt(
+                    CiphertextBlob=b64decode(text.encode("utf-8"))
+                )["Plaintext"].decode("utf-8")
+
+            data = {
+                key: value if value is None else decrypt(kms, str(value))
+                for key, value in data.items()
+            }
+
+        return cls(**data)
+
+    def to_dict(self):
+        """
+        Convert credentials into a dict.
+        """
+        return dict(
+            host=self.host,
+            port=self.port,
+            database=self.database,
+            username=self.username,
+            password=self.password,
+        )
+
+    #--- engine creator logic
+    def create_connect_str(self, dialect_and_driver):
+        return "{}://{}".format(dialect_and_driver, self.uri)
+
+    _ccs = create_connect_str
+
+    def create_engine(self, conn_str, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return sa.create_engine(conn_str, **kwargs)
+
+    _ce = create_engine
+
+    @classmethod
+    def create_sqlite(cls, path=":memory:", **kwargs):
+        """
+        :rtype: Engine
+        """
+        return sa.create_engine("sqlite:///{path}".format(path=path), **kwargs)
+
+    class DialectAndDriver(object):
+        psql = "postgresql"
+        psql_psycopg2 = "postgresql+psycopg2"
+        psql_pg8000 = "postgresql+pg8000"
+        psql_pygresql = "postgresql+pygresql"
+        psql_psycopg2cffi = "postgresql+psycopg2cffi"
+        psql_pypostgresql = "postgresql+pypostgresql"
+        mysql = "mysql"
+        mysql_mysqldb = "mysql+mysqldb"
+        mysql_mysqlconnector = "mysql+mysqlconnector"
+        mysql_oursql = "mysql+oursql"
+        mysql_pymysql = "mysql+pymysql"
+        mysql_cymysql = "mysql+cymysql"
+        oracle = "oracle"
+        oracle_cx_oracle = "oracle+cx_oracle"
+        mssql_pyodbc = "mssql+pyodbc"
+        mssql_pymssql = "mssql+pymssql"
+        redshift_psycopg2 = "redshift+psycopg2"
+
+    # postgresql
+    def create_postgresql(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.psql), **kwargs
+        )
+
+    def create_postgresql_psycopg2(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.psql_psycopg2), **kwargs
+        )
+
+    def create_postgresql_pg8000(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.psql_pg8000), **kwargs
+        )
+
+    def _create_postgresql_pygresql(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.psql_pygresql), **kwargs
+        )
+
+    def create_postgresql_psycopg2cffi(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.psql_psycopg2cffi), **kwargs
+        )
+
+    def create_postgresql_pypostgresql(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.psql_pypostgresql), **kwargs
+        )
+
+    # mysql
+    def create_mysql(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mysql), **kwargs
+        )
+
+    def create_mysql_mysqldb(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mysql_mysqldb), **kwargs
+        )
+
+    def create_mysql_mysqlconnector(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mysql_mysqlconnector), **kwargs
+        )
+
+    def create_mysql_oursql(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mysql_oursql), **kwargs
+        )
+
+    def create_mysql_pymysql(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mysql_pymysql), **kwargs
+        )
+
+    def create_mysql_cymysql(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mysql_cymysql), **kwargs
+        )
+
+    # oracle
+    def create_oracle(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.oracle), **kwargs
+        )
+
+    def create_oracle_cx_oracle(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.oracle_cx_oracle), **kwargs
+        )
+
+    # mssql
+    def create_mssql_pyodbc(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mssql_pyodbc), **kwargs
+        )
+
+    def create_mssql_pymssql(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.mssql_pymssql), **kwargs
+        )
+
+    # redshift
+    def create_redshift(self, **kwargs):
+        """
+        :rtype: Engine
+        """
+        return self._ce(
+            self._ccs(self.DialectAndDriver.redshift_psycopg2), **kwargs
+        )
 
 
-def preprocess_port(port=None):
-    if port is None:
-        return ""
-    else:
-        return ":%s" % port
+if __name__ == "__main__":
+    import boto3
+    from base64 import b64decode
 
-
-template = "{dialect}{driver}://{username}:{password}@{host}{port}/{database}"
-
-
-def format_url(dialect, driver, username, password, host, port, database):
-    import warnings
-    msg = "sqlalchemy_mate.engine_creator will be deprecate soon, use sqlalchemy_mate.EngineCreator instead"
-    warnings.warn(msg, DeprecationWarning)
-
-    return template.format(
-        dialect=dialect,
-        driver=preprocess_driver(driver),
-        username=username,
-        password=password,
-        host=host,
-        port=preprocess_port(port),
-        database=database,
+    cred = Credential.from_s3_json(
+        "sanhe-credential", "db/elephant-dupe-remove.json",
+        aws_profile="sanhe",
     )
-
-
-# sqlite
-
-def _create_sqlite(path=":memory:"):
-    return "sqlite:///{path}".format(path=path)
-
-
-def create_sqlite(path=":memory:", **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a sqlite database. By default, use in memory
-    database.
-    """
-    return create_engine(_create_sqlite(path), **kwargs)
-
-
-# postgresql
-
-def _create_postgresql(username, password, host, port, database):
-    return format_url(
-        "postgresql", None, username, password, host, port, database,
-    )
-
-
-def create_postgresql(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a postgresql database using psycopg2.
-    """
-    return create_engine(
-        _create_postgresql(username, password, host, port, database),
-        **kwargs
-    )
-
-
-def _create_postgresql_psycopg2(username, password, host, port, database):
-    return format_url(
-        "postgresql", "psycopg2", username, password, host, port, database,
-    )
-
-
-def create_postgresql_psycopg2(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a postgresql database using psycopg2.
-    """
-    return create_engine(
-        _create_postgresql_psycopg2(username, password, host, port, database),
-        **kwargs
-    )
-
-
-def _create_postgresql_pg8000(username, password, host, port, database):
-    return format_url(
-        "postgresql", "pg8000", username, password, host, port, database,
-    )
-
-
-def create_postgresql_pg8000(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a postgresql database using pg8000.
-    """
-    return create_engine(
-        _create_postgresql_pg8000(username, password, host, port, database),
-        **kwargs
-    )
-
-
-def _create_postgresql_pygresql(username, password, host, port, database):
-    return format_url(
-        "postgresql", "pygresql", username, password, host, port, database,
-    )
-
-
-def create_postgresql_pygresql(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a postgresql database using pygresql.
-    """
-    return create_engine(
-        _create_postgresql_pygresql(username, password, host, port, database),
-        **kwargs
-    )
-
-
-def _create_postgresql_psycopg2cffi(username, password, host, port, database):
-    return format_url(
-        "postgresql", "psycopg2cffi", username, password, host, port, database,
-    )
-
-
-def create_postgresql_psycopg2cffi(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a postgresql database using psycopg2cffi.
-    """
-    return create_engine(
-        _create_postgresql_psycopg2cffi(
-            username, password, host, port, database),
-        **kwargs
-    )
-
-
-def _create_postgresql_pypostgresql(username, password, host, port, database):
-    return format_url(
-        "postgresql", "pypostgresql", username, password, host, port, database,
-    )
-
-
-def create_postgresql_pypostgresql(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a postgresql database using pypostgresql.
-    """
-    return create_engine(
-        _create_postgresql_pypostgresql(
-            username, password, host, port, database),
-        **kwargs
-    )
-
-
-# mysql
-
-def _create_mysql(username, password, host, port, database):
-    return format_url(
-        "mysql", None, username, password, host, port, database,
-    )
-
-
-def create_mysql(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a mysql database using mysqldb.
-    """
-    return create_engine(
-        _create_mysql(username, password, host, port, database),
-        **kwargs
-    )
-
-
-def _create_mysql_mysqldb(username, password, host, port, database):
-    return format_url(
-        "mysql", "mysqldb", username, password, host, port, database,
-    )
-
-
-def create_mysql_mysqldb(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a mysql database using mysqldb.
-    """
-    return create_engine(
-        _create_mysql_mysqldb(username, password, host, port, database),
-        **kwargs
-    )
-
-
-def _create_mysql_mysqlconnector(username, password, host, port, database):
-    return format_url(
-        "mysql", "mysqlconnector", username, password, host, port, database,
-    )
-
-
-def create_mysql_mysqlconnector(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a mysql database using mysqlconnector.
-    """
-    return create_engine(
-        _create_mysql_mysqlconnector(username, password, host, port, database),
-        **kwargs
-    )
-
-
-def _create_mysql_oursql(username, password, host, port, database):
-    return format_url(
-        "mysql", "oursql", username, password, host, port, database,
-    )
-
-
-def create_mysql_oursql(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a mysql database using oursql.
-    """
-    return create_engine(
-        _create_mysql_oursql(username, password, host, port, database),
-        **kwargs
-    )
-
-
-def _create_mysql_pymysql(username, password, host, port, database):
-    return format_url(
-        "mysql", "pymysql", username, password, host, port, database,
-    )
-
-
-def create_mysql_pymysql(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a mysql database using pymysql.
-    """
-    return create_engine(
-        _create_mysql_pymysql(username, password, host, port, database),
-        **kwargs
-    )
-
-
-def _create_mysql_cymysql(username, password, host, port, database):
-    return format_url(
-        "mysql", "cymysql", username, password, host, port, database,
-    )
-
-
-def create_mysql_cymysql(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a mysql database using cymysql.
-    """
-    return create_engine(
-        _create_mysql_cymysql(username, password, host, port, database),
-        **kwargs
-    )
-
-
-# oracle
-
-def _create_oracle(username, password, host, port, database):
-    return format_url(
-        "oracle", None, username, password, host, port, database,
-    )
-
-
-def create_oracle(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a oracle database using cx_oracle.
-    """
-    return create_engine(
-        _create_oracle(username, password, host, port, database),
-        **kwargs
-    )
-
-
-def _create_oracle_cx_oracle(username, password, host, port, database):
-    return format_url(
-        "oracle", "cx_oracle", username, password, host, port, database,
-    )
-
-
-def create_oracle_cx_oracle(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a oracle database using cx_oracle.
-    """
-    return create_engine(
-        _create_oracle_cx_oracle(username, password, host, port, database),
-        **kwargs
-    )
-
-
-# mssql
-
-def _create_mssql_pyodbc(username, password, host, port, database):
-    return format_url(
-        "mssql", "pyodbc", username, password, host, port, database,
-    )
-
-
-def create_mssql_pyodbc(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a mssql database using pyodbc.
-    """
-    return create_engine(
-        _create_mssql_pyodbc(username, password, host, port, database),
-        **kwargs
-    )
-
-
-def _create_mssql_pymssql(username, password, host, port, database):
-    return format_url(
-        "mssql", "pymssql", username, password, host, port, database,
-    )
-
-
-def create_mssql_pymssql(username, password, host, port, database, **kwargs):  # pragma: no cover
-    """
-    create an engine connected to a mssql database using pymssql.
-    """
-    return create_engine(
-        _create_mssql_pymssql(username, password, host, port, database),
-        **kwargs
-    )
+    print(cred)

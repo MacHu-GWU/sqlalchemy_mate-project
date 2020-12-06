@@ -5,6 +5,7 @@ This module provide utility functions for insert operation.
 """
 
 import math
+from typing import Union, List
 from sqlalchemy.exc import IntegrityError
 
 try:
@@ -26,7 +27,7 @@ def smart_insert(engine, table, data, minimal_size=5, op_counter=0):
 
     :type engine: Engine
     :type table: Table
-    :type data: list
+    :type data: Union[dict, List[dict]]
     :type minimal_size: int
     :type op_counter: int
 

@@ -12,7 +12,7 @@ __github_username__ = "MacHu-GWU"
 try:
     from . import engine_creator, io, pt
     from .utils import test_connection
-    from .credential import Credential, EngineCreator
+    from .engine_creator import EngineCreator
     from .crud import selecting, inserting, updating
     from .orm.extended_declarative_base import ExtendedBase
     from .pkg.timeout_decorator import TimeoutError

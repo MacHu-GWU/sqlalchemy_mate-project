@@ -8,51 +8,13 @@ from collections import OrderedDict
 
 import pytest
 from pytest import raises
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 
-from sqlalchemy_mate import engine_creator
-from sqlalchemy_mate.orm.extended_declarative_base import ExtendedBase
-
-Base = declarative_base()
-engine = engine_creator.create_sqlite()
+from sqlalchemy_mate.tests import (
+    User, Association,
+)
 
 
-class User(Base, ExtendedBase):
-    __tablename__ = "extended_declarative_base_user"
-
-    _settings_major_attrs = ["id", "name"]
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True)
-
-
-class Association(Base, ExtendedBase):
-    __tablename__ = "extended_declarative_base_associattion"
-
-    x_id = Column(Integer, primary_key=True)
-    y_id = Column(Integer, primary_key=True)
-
-
-Base.metadata.create_all(engine)
-
-Session = sessionmaker(bind=engine)
-
-
-class TestBase(object):
-    ses = None
-
-    @classmethod
-    def setup_class(cls):
-        cls.ses = Session()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.ses.close()
-
-
-class TestExtendedBase(TestBase):
+class TestExtendedBaseOOP:
     def test_keys(self):
         assert User.keys() == ["id", "name"]
         assert User(id=1).keys() == ["id", "name"]

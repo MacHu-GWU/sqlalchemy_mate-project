@@ -1,96 +1,91 @@
 # -*- coding: utf-8 -*-
 
+import json
+import os
+
 import pytest
-from sqlalchemy_mate import engine_creator
+from pytest import raises
+
+from sqlalchemy_mate.engine_creator import EngineCreator
+
+json_file = os.path.join(os.path.dirname(__file__), "db.json")
+with open(json_file, "wb") as f:
+    f.write(
+        json.dumps({
+            "mydb": dict(host="host", port=1234, database="dev",
+                         username="user", password="pass")
+        }).encode("utf-8")
+    )
 
 
-def test_create_sqlite():
-    assert engine_creator._create_sqlite() == "sqlite:///:memory:"
-    assert engine_creator._create_sqlite("test.db") == \
-        "sqlite:///test.db"
+class TestEngineCreator(object):
+    def test_uri(self):
+        cred = EngineCreator(host="host", port=1234, database="dev",
+                             username="user", password="pass")
+        assert cred.uri == "user:pass@host:1234/dev"
 
+        cred = EngineCreator(host="host", port=1234,
+                             database="dev", username="user")
+        assert cred.uri == "user@host:1234/dev"
 
-username = "admin"
-password = "password"
-host = "localhost"
-port = 8080
-database = "test"
+        cred = EngineCreator(host="host", database="dev",
+                             username="user", password="pass")
+        assert cred.uri == "user:pass@host/dev"
 
+        cred = EngineCreator(host="host", database="dev", username="user")
+        assert cred.uri == "user@host/dev"
 
-def test_postgresql():
-    assert engine_creator._create_postgresql(
-        username, password, host, port, database) == \
-        "postgresql://admin:password@localhost:8080/test"
+    def test_from_json_data(self):
+        cred = EngineCreator.from_json(json_file, json_path="mydb")
+        assert cred.uri == "user:pass@host:1234/dev"
 
-    assert engine_creator._create_postgresql(
-        username, password, host, None, database) == \
-        "postgresql://admin:password@localhost/test"
+        cred.to_dict()
 
-    assert engine_creator._create_postgresql_psycopg2(
-        username, password, host, port, database) == \
-        "postgresql+psycopg2://admin:password@localhost:8080/test"
+    def test_from_env(self):
+        os.environ["DB_HOST"] = "host"
+        os.environ["DB_PORT"] = "1234"
+        os.environ["DB_DATABASE"] = "dev"
+        os.environ["DB_USERNAME"] = "user"
+        os.environ["DB_PASSWORD"] = "pass"
+        cred = EngineCreator.from_env(prefix="DB")
+        assert cred.uri == "user:pass@host:1234/dev"
+        cred = EngineCreator.from_env(prefix="DB_")
+        assert cred.uri == "user:pass@host:1234/dev"
 
-    assert engine_creator._create_postgresql_pg8000(
-        username, password, host, port, database) == \
-        "postgresql+pg8000://admin:password@localhost:8080/test"
+        with raises(ValueError):
+            EngineCreator.from_env(prefix="")
 
-    assert engine_creator._create_postgresql_pygresql(
-        username, password, host, port, database) == \
-        "postgresql+pygresql://admin:password@localhost:8080/test"
+        with raises(ValueError):
+            EngineCreator.from_env(prefix="db")
 
-    assert engine_creator._create_postgresql_psycopg2cffi(
-        username, password, host, port, database) == \
-        "postgresql+psycopg2cffi://admin:password@localhost:8080/test"
+        with raises(ValueError):
+            EngineCreator.from_env(prefix="VAR1")
 
-    assert engine_creator._create_postgresql_pypostgresql(
-        username, password, host, port, database) == \
-        "postgresql+pypostgresql://admin:password@localhost:8080/test"
+    def test_validate_key_mapping(self):
+        with raises(ValueError):
+            EngineCreator._validate_key_mapping({})
 
+        with raises(ValueError):
+            EngineCreator._validate_key_mapping(dict(a=1, b=2))
 
-def test_mysql():
-    assert engine_creator._create_mysql(
-        username, password, host, port, database) == \
-        "mysql://admin:password@localhost:8080/test"
+        EngineCreator._validate_key_mapping(None)
+        EngineCreator._validate_key_mapping(
+            dict(
+                host="host", port="port", database="db",
+                username="user", password="pass"
+            )
+        )
 
-    assert engine_creator._create_mysql_mysqldb(
-        username, password, host, port, database) == \
-        "mysql+mysqldb://admin:password@localhost:8080/test"
-
-    assert engine_creator._create_mysql_mysqlconnector(
-        username, password, host, port, database) == \
-        "mysql+mysqlconnector://admin:password@localhost:8080/test"
-
-    assert engine_creator._create_mysql_oursql(
-        username, password, host, port, database) == \
-        "mysql+oursql://admin:password@localhost:8080/test"
-
-    assert engine_creator._create_mysql_pymysql(
-        username, password, host, port, database) == \
-        "mysql+pymysql://admin:password@localhost:8080/test"
-
-    assert engine_creator._create_mysql_cymysql(
-        username, password, host, port, database) == \
-        "mysql+cymysql://admin:password@localhost:8080/test"
-
-
-def test_oracle():
-    assert engine_creator._create_oracle(
-        username, password, host, port, database) == \
-        "oracle://admin:password@localhost:8080/test"
-
-    assert engine_creator._create_oracle_cx_oracle(
-        username, password, host, port, database) == \
-        "oracle+cx_oracle://admin:password@localhost:8080/test"
-
-
-def test_mssql():
-    assert engine_creator._create_mssql_pyodbc(
-        username, password, host, port, database) == \
-        "mssql+pyodbc://admin:password@localhost:8080/test"
-
-    assert engine_creator._create_mssql_pymssql(
-        username, password, host, port, database) == \
-        "mssql+pymssql://admin:password@localhost:8080/test"
+    def test_transform(self):
+        data = {"host": 1, "port": 2, "db": 3, "user": 4, "pass": 5}
+        new_data = EngineCreator._transform(
+            data, dict(
+                host="host", port="port", database="db",
+                username="user", password="pass"
+            )
+        )
+        assert new_data == dict(
+            host=1, port=2, database=3, username=4, password=5)
 
 
 if __name__ == "__main__":

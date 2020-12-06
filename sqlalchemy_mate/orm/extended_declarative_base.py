@@ -466,7 +466,7 @@ class ExtendedBase(Base):
                 ses.add_all(objs_to_insert)
                 ses.commit()
                 op_counter += len(objs_to_insert)
-            except (IntegrityError, FlushError):
+            except (IntegrityError, FlushError): # pragma: no cover
                 ses.rollback()
         else:
             ses.commit()
@@ -494,7 +494,7 @@ class ExtendedBase(Base):
         )
 
     @classmethod
-    def random(cls, engine_or_session, limit=5):
+    def random_sample(cls, engine_or_session, limit=5):
         """
         Return random ORM instance.
 

@@ -113,3 +113,11 @@ info: ## ** Show information about python, pip in this environment
 
 req-info: ## Show requirements information
 	bash ./bin/py/req-info.sh
+
+
+run-psql: ## Run postgresql db in container locally for test
+	bash ./bin/py/run-postgres.sh
+
+
+stop-psql: ## Stop postgresql db container
+	bash ./bin/py/stop-postgres.sh

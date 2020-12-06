@@ -7,7 +7,7 @@ omit =
     sqlalchemy_mate/pkg/*
     sqlalchemy_mate/docs/*
     sqlalchemy_mate/tests/*
-    sqlalchemy_mate/handlers/*
+    sqlalchemy_mate/mig/*
 
 [report]
 # Regexes for lines to exclude from consideration
