@@ -12,7 +12,7 @@ on:
   workflow_dispatch: # allows you to manually trigger run
 
 jobs:
-  tests:
+  tests-on-linux:
     name: "${{ matrix.os }} Python ${{ matrix.python-version }}"
     runs-on: "${{ matrix.os }}" # for all available VM runtime, see this: https://docs.github.com/en/free-pro-team@latest/actions/reference/specifications-for-github-hosted-runners
     services:
@@ -36,7 +36,42 @@ jobs:
       USING_COVERAGE: "3.6,3.7,3.8,3.9"
     strategy:
       matrix:
-        os: ["ubuntu-latest", "windows-latest"]
+        os: ["ubuntu-latest"]
+#        os: ["ubuntu-latest"] # for temp testing only
+        python-version: ["3.6", "3.7", "3.8", "3.9"]
+#        python-version: ["3.6"] # for temp testing only
+    steps:
+      - uses: "actions/checkout@v2" # https://github.com/marketplace/actions/checkout
+      - uses: "actions/setup-python@v2" # https://github.com/marketplace/actions/setup-python
+        with:
+          python-version: "${{ matrix.python-version }}"
+
+      - name: "Install dependencies on MacOS or Linux"
+        run: |
+          set -xe
+          python -VV
+          python -m site
+          python -m pip install --upgrade pip setuptools wheel virtualenv codecov
+          pip install .
+          pip install -r requirements-test.tx
+
+      - name: "Run pytest"
+        run: "python -m pytest tests --cov=sqlalchemy_mate"
+
+      - name: "Upload coverage to Codecov"
+        if: "contains(env.USING_COVERAGE, matrix.python-version)"
+        uses: "codecov/codecov-action@v1" # https://github.com/marketplace/actions/codecov-action
+        with:
+          fail_ci_if_error: true
+
+  tests-on-windows:
+    name: "${{ matrix.os }} Python ${{ matrix.python-version }}"
+    runs-on: "${{ matrix.os }}" # for all available VM runtime, see this: https://docs.github.com/en/free-pro-team@latest/actions/reference/specifications-for-github-hosted-runners
+    env: # define environment variables
+      USING_COVERAGE: "3.6,3.7,3.8,3.9"
+    strategy:
+      matrix:
+        os: ["windows-latest"]
 #        os: ["ubuntu-latest"] # for temp testing only
         python-version: ["3.6", "3.7", "3.8", "3.9"]
 #        python-version: ["3.6"] # for temp testing only
@@ -49,17 +84,7 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
 
-      - if: matrix.os == 'ubuntu-latest' # for condition steps, you should put if at begin, and use single quote for logical expression
-        name: "Install dependencies on MacOS or Linux"
-        run: |
-          set -xe
-          python -VV
-          python -m site
-          python -m pip install --upgrade pip setuptools wheel virtualenv codecov
-          pip install .
-          pip install -r requirements-test.txt
-
-      - if: matrix.os == 'windows-latest'
+      - if: matrix.os == 'windows-latest' # for condition steps, you should put if at begin, and use single quote for logical expression, this line is not necessary at all, but I intentionally leave it here to demonstrate the right conditional step syntax
         name: "Install dependencies on Windows"
         run: |
           python -m site
