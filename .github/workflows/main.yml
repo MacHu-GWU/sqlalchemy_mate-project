@@ -15,6 +15,21 @@ jobs:
   tests:
     name: "${{ matrix.os }} Python ${{ matrix.python-version }}"
     runs-on: "${{ matrix.os }}" # for all available VM runtime, see this: https://docs.github.com/en/free-pro-team@latest/actions/reference/specifications-for-github-hosted-runners
+    container: cimg/python:3.6.9
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres:10.6-alpine # docker run --rm --name test-psql-db -p 43347:5432 -e POSTGRES_PASSWORD=password -d postgres:10.6-alpine
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: password
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env: # define environment variables
       USING_COVERAGE: "3.6,3.7,3.8,3.9"
     strategy:
