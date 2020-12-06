@@ -71,7 +71,7 @@ class TestExtendedBaseEdgeCase(object):
         user1.revise(dict(name="Bob", pin=None), ignore_none=False)
         assert user1.values() == [1, "Bob", None]
 
-    def test_by_id(self):
+    def test_by_pk(self):
         PostTagAssociation.smart_insert(
             PostTagAssociation.get_eng(), [
                 PostTagAssociation(post_id=1, tag_id=1, description="1-1"),
@@ -85,7 +85,7 @@ class TestExtendedBaseEdgeCase(object):
             ]
         )
 
-        pta = PostTagAssociation.by_id((1, 2), self.ses)
+        pta = PostTagAssociation.by_pk((1, 2), self.ses)
         assert pta.post_id == 1
         assert pta.tag_id == 2
 

@@ -5,15 +5,16 @@ Extend the power of declarative base.
 """
 
 from __future__ import print_function
+
 import math
-from copy import deepcopy
 from collections import OrderedDict
+from copy import deepcopy
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm.exc import FlushError
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.inspection import inspect
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.exc import FlushError
 
 try:
     from ..utils import ensure_list, grouper_list, ensure_session
@@ -26,14 +27,19 @@ try:  # for type hint only
     from sqlalchemy import Table
     from sqlalchemy.engine import Engine
     from sqlalchemy.orm.session import Session
+    from sqlalchemy.orm.attributes import InstrumentedAttribute
     from sqlalchemy.sql.selectable import Select
     from sqlalchemy.sql.elements import TextClause
-    from typing import Union, List
+    from typing import Union, List, Tuple
 except ImportError:  # pragma: no cover
     pass
 
+from sqlalchemy.ext.declarative import declarative_base
 
-class ExtendedBase(object):
+Base = declarative_base()
+
+
+class ExtendedBase(Base):
     """
     Provide additional method.
 
@@ -46,6 +52,8 @@ class ExtendedBase(object):
         class User(Base, ExtendedBase):
             ... do what you do with sqlalchemy ORM
     """
+    __abstract__ = True
+
     _cache_pk_names = None
     _cache_id_field_name = None
     _cache_keys = None
@@ -59,7 +67,7 @@ class ExtendedBase(object):
     def make_session(cls):
         if cls._settings_engine is None:  # pragma: no cover
             raise TypeError
-        if not isinstance(cls._settings_engine, Engine): # pragma: no cover
+        if not isinstance(cls._settings_engine, Engine):  # pragma: no cover
             raise TypeError
         try:
             cls.close_session().close()
@@ -74,7 +82,7 @@ class ExtendedBase(object):
 
     @classmethod
     def get_eng(cls):
-        if cls._settings_engine is None: # pragma: no cover
+        if cls._settings_engine is None:  # pragma: no cover
             raise NotImplementedError("you have to specify the engine at `_settings_engine` attribute!")
         return cls._settings_engine
 
@@ -103,12 +111,30 @@ class ExtendedBase(object):
             cls._cache_pk_names = cls._get_primary_key_names()
         return cls._cache_pk_names
 
+    @classmethod
+    def pk_fields(cls):
+        """
+        Primary key columns instance. For example::
+
+            class User(Base):
+                id = Column(..., primary_key=True)
+                name = Column(...)
+
+            User.pk_fields() # (User.id,)
+
+        :rtype: tuple
+        """
+        return tuple([getattr(cls, name) for name in cls.pk_names()])
+
     def pk_values(self):
         """
         Primary key values
+
+        :rtype: tuple
         """
         return tuple([getattr(self, name) for name in self.pk_names()])
 
+    # id_field_xxx() method are only valid if there's only one primary key
     @classmethod
     def id_field_name(cls):
         """
@@ -127,7 +153,26 @@ class ExtendedBase(object):
                 )
         return cls._cache_id_field_name
 
+    @classmethod
+    def id_field(cls):
+        """
+        If only one primary_key, then return the Class.field name object.
+        Otherwise, raise ValueError.
+
+        It is usually used for orm query API. For example:
+
+        ``session.query(User).filter(User.name=="Alice")``, User.name is a
+        perfect example.
+
+        :rtype: InstrumentedAttribute
+        """
+        return getattr(cls, cls.id_field_name())
+
     def id_field_value(self):
+        """
+        If only one primary_key, then return the value of primary key.
+        Otherwise, raise ValueError
+        """
         return getattr(self, self.id_field_name())
 
     @classmethod
@@ -197,10 +242,12 @@ class ExtendedBase(object):
                     pass
             return OrderedDict(items)
 
-    def glance(self):  # pragma: no cover
+    def glance(self, _verbose=True):  # pragma: no cover
         """
         Print itself, only display attributes defined in
         :attr:`ExtendedBase._settings_major_attrs`
+
+        :param _verbose: internal param for unit testing
         """
         if self._settings_major_attrs is None:
             msg = ("Please specify attributes you want to include "
@@ -220,7 +267,8 @@ class ExtendedBase(object):
             ])
         )
 
-        print(text)
+        if _verbose:  # pragma: no cover
+            print(text)
 
     def absorb(self, other, ignore_none=True):
         """
@@ -272,11 +320,17 @@ class ExtendedBase(object):
         return self
 
     @classmethod
-    def by_id(cls, _id, engine_or_session):
+    def by_pk(cls, _id, engine_or_session):
         """
         Get one object by primary_key value.
 
         :type engine_or_session: Union[Engine, Session]
+        
+        .. note::
+        
+            From sqlalchemy==1.4, Query.get method will be deprecated.
+            So this method is no longer needed anymore. But I choose to
+            leave it here until Query.get is fully deprecated.
         """
         ses, auto_close = ensure_session(engine_or_session)
         obj = ses.query(cls).get(_id)
@@ -299,15 +353,16 @@ class ExtendedBase(object):
         return result
 
     @classmethod
-    def smart_insert(cls, engine_or_session, data, minimal_size=5, op_counter=0):
+    def smart_insert(cls, engine_or_session, obj_or_objs, minimal_size=5, op_counter=0):
         """
         An optimized Insert strategy.
 
         :type engine_or_session: Union[Engine, Session]
-        :type data: Union[ExtendedBase, List[ExtendedBase]]
+        :type obj_or_objs: Union[ExtendedBase, List[ExtendedBase]]
         :type minimal_size: int
         :type op_counter: int
 
+        :rtype: int
         :return: number of insertion operation been executed. Usually it is
             greatly smaller than ``len(data)``.
 
@@ -331,27 +386,27 @@ class ExtendedBase(object):
         """
         ses, auto_close = ensure_session(engine_or_session)
 
-        if isinstance(data, list):
+        if isinstance(obj_or_objs, list):
             # 首先进行尝试bulk insert
             try:
-                ses.add_all(data)
+                ses.add_all(obj_or_objs)
                 ses.commit()
                 op_counter += 1
             # 失败了
             except (IntegrityError, FlushError):
                 ses.rollback()
                 # 分析数据量
-                n = len(data)
+                n = len(obj_or_objs)
                 # 如果数据条数多于一定数量
                 if n >= minimal_size ** 2:
                     # 则进行分包
                     n_chunk = math.floor(math.sqrt(n))
-                    for chunk in grouper_list(data, n_chunk):
+                    for chunk in grouper_list(obj_or_objs, n_chunk):
                         op_counter = cls.smart_insert(
                             ses, chunk, minimal_size, op_counter)
                 # 否则则一条条地逐条插入
                 else:
-                    for obj in data:
+                    for obj in obj_or_objs:
                         try:
                             ses.add(obj)
                             ses.commit()
@@ -360,7 +415,7 @@ class ExtendedBase(object):
                             ses.rollback()
         else:
             try:
-                ses.add(data)
+                ses.add(obj_or_objs)
                 ses.commit()
             except (IntegrityError, FlushError):
                 ses.rollback()
@@ -371,41 +426,70 @@ class ExtendedBase(object):
         return op_counter
 
     @classmethod
-    def update_all(cls, engine, obj_or_data, upsert=False):
+    def update_all(cls, engine_or_session, obj_or_objs, upsert=False):
         """
         The :meth:`sqlalchemy.crud.updating.update_all` function in ORM syntax.
 
-        :type engine: Engine
-        :param engine: an engine created by``sqlalchemy.create_engine``.
+        This operation **IS NOT ATOMIC**. It is a greedy operation, trying to
+        update as much as it can.
 
-        :type obj_or_data: Union[ExtendedBase, List[ExtendedBase]]
-        :param obj_or_data: single object or list of object
+        :type engine_or_session: Union[Engine, Session]
+        :param engine_or_session: an engine created by``sqlalchemy.create_engine``.
+
+        :type obj_or_objs: Union[ExtendedBase, List[ExtendedBase]]
+        :param obj_or_objs: single object or list of object
 
         :type upsert: bool
         :param upsert: if True, then do insert also.
+
+        :rtype: int
+        :return: number of row been changed
         """
-        obj_or_data = ensure_list(obj_or_data)
-        update_all(
-            engine=engine,
-            table=cls.__table__,
-            data=[obj.to_dict(include_null=False) for obj in obj_or_data],
-            upsert=upsert,
-        )
+        op_counter = 0
+        ses, auto_close = ensure_session(engine_or_session)
+
+        obj_or_objs = ensure_list(obj_or_objs) # type: List[ExtendedBase]
+
+        objs_to_insert = list()
+        for obj in obj_or_objs:
+            flag = ses.query(cls).filter(*[
+                    field==value
+                    for field, value in zip(obj.pk_fields(), obj.pk_values())
+            ]).update(dict(obj.items()))
+            if flag:
+                op_counter += 1
+            else:
+                objs_to_insert.append(obj)
+
+        if upsert:
+            try:
+                ses.add_all(objs_to_insert)
+                ses.commit()
+                op_counter += len(objs_to_insert)
+            except (IntegrityError, FlushError):
+                ses.rollback()
+        else:
+            ses.commit()
+
+        return op_counter
 
     @classmethod
-    def upsert_all(cls, engine, obj_or_data):
+    def upsert_all(cls, engine_or_session, obj_or_objs):
         """
         The :meth:`sqlalchemy.crud.updating.upsert_all` function in ORM syntax.
 
-        :type engine: Engine
-        :param engine: an engine created by``sqlalchemy.create_engine``.
+        :type engine_or_session: Union[Engine, Session]
+        :param engine_or_session: an engine created by``sqlalchemy.create_engine``.
 
-        :type obj_or_data: Union[ExtendedBase, List[ExtendedBase]]
-        :param obj_or_data: single object or list of object
+        :type obj_or_objs: Union[ExtendedBase, List[ExtendedBase]]
+        :param obj_or_objs: single object or list of object
+
+        :rtype: int
+        :return: number of row been changed
         """
-        cls.update_all(
-            engine=engine,
-            obj_or_data=obj_or_data,
+        return cls.update_all(
+            engine_or_session=engine_or_session,
+            obj_or_objs=obj_or_objs,
             upsert=True,
         )
 

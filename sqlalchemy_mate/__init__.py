@@ -15,7 +15,7 @@ try:
     from .credential import Credential, EngineCreator
     from .crud import selecting, inserting, updating
     from .orm.extended_declarative_base import ExtendedBase
-    from timeout_decorator import TimeoutError
+    from .pkg.timeout_decorator import TimeoutError
 except ImportError as e:  # pragma: no cover
     print(e)
 except Exception as e:  # pragma: no cover

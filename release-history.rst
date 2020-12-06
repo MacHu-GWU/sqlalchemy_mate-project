@@ -15,6 +15,33 @@ Release and Version History
 **Miscellaneous**
 
 
+0.0.11 (2020-12-05)
+~~~~~~~~~~~~~~~~~~~
+**Features and Improvements**
+
+- ``ExtendedBase.by_id`` is renamed to ``ExtendedBase.by_pk``. The old method name is kept for backward API compatibility.
+- add ``ExtendedBase.pk_fields`` method
+- refact ``ExtendedBase.update_all`` method, allow working with session
+
+**Minor Improvements**
+
+- move CI to GitHub Action.
+- add unit test on Windows
+
+**Bugfixes**
+
+**Miscellaneous**
+
+- use in-package timeout_decorator library to ensure api compatibility
+
+
+0.0.10 (2019-04-26)
+~~~~~~~~~~~~~~~~~~~
+**Minor Improvements**
+
+add type hint
+
+
 0.0.9 (2019-04-26)
 ~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
@@ -25,7 +52,7 @@ Release and Version History
 **Minor Improvements**
 
 - More edge case test
-- allo user to assign engine to ``ExtendedBase._settings_engine`` and then access engine and session with ``ExtendedBase.get_eng()``, ``ExtendedBase.get_ses()``
+- allow user to assign engine to ``ExtendedBase._settings_engine`` and then access engine and session with ``ExtendedBase.get_eng()``, ``ExtendedBase.get_ses()``
 
 **Bugfixes**
 

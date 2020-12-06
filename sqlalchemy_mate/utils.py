@@ -5,9 +5,9 @@ Utilities function.
 """
 
 import sqlalchemy as sa
+from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
-from sqlalchemy.engine.base import Engine
 
 try:
     from typing import Type, Union, Tuple
@@ -68,7 +68,7 @@ def ensure_session(engine_or_session):
     """
     if isinstance(engine_or_session, Engine):
         engine_id = id(engine_or_session)
-        if id(engine_id) in session_klass_cache: # pragma: no cover
+        if id(engine_id) in session_klass_cache:  # pragma: no cover
             SessionClass = session_klass_cache[engine_id]
         else:  # pragma: no cover
             SessionClass = sessionmaker(bind=engine_or_session)
@@ -116,16 +116,16 @@ def execute_query_return_result_proxy(query):
     return conn.execute(context.statement, query._params)
 
 
-def test_connection(engine, timeout=3):
-    import timeout_decorator
+from .pkg import timeout_decorator
 
+
+def test_connection(engine, timeout=3):
     @timeout_decorator.timeout(timeout)
-    def test(engine):
+    def _test_connection(engine):
         v = engine.execute(sa.text("SELECT 1;")).fetchall()[0][0]
         assert v == 1
-
     try:
-        test(engine)
+        _test_connection(engine)
         return True
     except timeout_decorator.TimeoutError:
         raise timeout_decorator.TimeoutError(

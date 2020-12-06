@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pytest
+import sys
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_mate.tests import engine, User
 from sqlalchemy_mate import utils
@@ -22,6 +23,9 @@ def test_convert_query_to_sql_statement():
 
 def test_timeout():
     from sqlalchemy_mate import EngineCreator, TimeoutError
+
+    if sys.platform.lower().startswith("win"):
+        return
 
     engine = EngineCreator(
         host="stampy.db.elephantsql.com", port=5432,
