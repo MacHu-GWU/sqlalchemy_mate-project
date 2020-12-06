@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy_mate.crud.inserting import smart_insert
 from sqlalchemy_mate.crud.selecting import count_row
 from sqlalchemy_mate.tests import (
+    IS_WINDOWS,
     engine_sqlite, engine_psql, t_smart_insert, BaseClassForTest
 )
 
@@ -83,6 +84,7 @@ class TestInsertingApiSqlite(InsertingApiBaseTest):
     engine = engine_sqlite
 
 
+@pytest.mark.skipif(IS_WINDOWS)
 class TestInsertingApiPostgres(InsertingApiBaseTest):
     engine = engine_psql
 

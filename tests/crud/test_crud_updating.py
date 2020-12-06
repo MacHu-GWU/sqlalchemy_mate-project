@@ -5,6 +5,7 @@ import pytest
 from sqlalchemy_mate.crud import selecting
 from sqlalchemy_mate.crud import updating
 from sqlalchemy_mate.tests import (
+    IS_WINDOWS,
     engine_sqlite, engine_psql, t_cache, t_graph, BaseClassForTest
 )
 
@@ -57,6 +58,7 @@ class TestUpdatingApiSqlite(UpdatingApiBaseTest):
     engine = engine_sqlite
 
 
+@pytest.mark.skipif(IS_WINDOWS)
 class TestUpdatingApiPostgres(UpdatingApiBaseTest):
     engine = engine_psql
 

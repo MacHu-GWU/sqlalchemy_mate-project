@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy import select, text
 
 from sqlalchemy_mate.tests import (
+    IS_WINDOWS,
     engine_sqlite, engine_psql, BaseClassForOrmTest,
     Base, User, Association,
 )
@@ -55,6 +56,7 @@ class TestExtendedBaseOnSqlite(SingleObjectApiTestBase):  # test on sqlite
     declarative_base_class = Base
 
 
+@pytest.mark.skipif(IS_WINDOWS)
 class TestExtendedBaseOnPostgres(SingleObjectApiTestBase):  # test on postgres
     engine = engine_psql
     declarative_base_class = Base

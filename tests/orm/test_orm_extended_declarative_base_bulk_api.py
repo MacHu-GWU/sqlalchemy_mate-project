@@ -9,6 +9,7 @@ from sqlalchemy.orm.exc import FlushError
 
 from sqlalchemy_mate import selecting
 from sqlalchemy_mate.tests import (
+    IS_WINDOWS,
     engine_sqlite, engine_psql, BaseClassForOrmTest,
     Base, User, Association, Order,
 )
@@ -167,6 +168,7 @@ class TestExtendedBaseOnSqlite(BulkOperationTestBase):  # test on sqlite
     declarative_base_class = Base
 
 
+@pytest.mark.skipif(IS_WINDOWS)
 class TestExtendedBaseOnPostgres(BulkOperationTestBase):  # test on postgres
     engine = engine_psql
     declarative_base_class = Base

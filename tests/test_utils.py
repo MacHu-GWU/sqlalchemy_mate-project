@@ -6,6 +6,7 @@ import pytest
 
 from sqlalchemy_mate import utils
 from sqlalchemy_mate.tests import (
+    IS_WINDOWS,
     engine_sqlite, engine_psql, User, Base, BaseClassForTest,
 )
 
@@ -58,6 +59,7 @@ class TestUtilitySqlite(UtilityTestBase):
     declarative_base_class = Base
 
 
+@pytest.mark.skipif(IS_WINDOWS)
 class TestUtilityPostgres(UtilityTestBase):
     engine = engine_psql
     declarative_base_class = Base

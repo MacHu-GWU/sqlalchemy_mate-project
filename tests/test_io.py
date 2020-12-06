@@ -4,7 +4,7 @@ import pytest
 
 from sqlalchemy_mate import io
 from sqlalchemy_mate.tests import (
-    engine_sqlite, engine_psql, t_user, t_inv, BaseClassForTest,
+    IS_WINDOWS, engine_sqlite, engine_psql, t_user, BaseClassForTest,
 )
 
 
@@ -36,6 +36,7 @@ class TestDataIOSqlite(DataIOTestBase):
     engine = engine_sqlite
 
 
+@pytest.mark.skipif(IS_WINDOWS)
 class TestDataIOPostgres(DataIOTestBase):
     engine = engine_psql
 

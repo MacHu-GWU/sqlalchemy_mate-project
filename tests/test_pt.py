@@ -8,6 +8,7 @@ from sqlalchemy import select, text
 from sqlalchemy_mate import pt, selecting
 from sqlalchemy_mate.pkg.prettytable import PrettyTable
 from sqlalchemy_mate.tests import (
+    IS_WINDOWS,
     engine_sqlite, engine_psql,
     t_user, t_inv, User, Association, Base,
     BaseClassForTest,
@@ -117,6 +118,7 @@ class TestPrettyyTableSqlite(PrettyTableTestBase):
     declarative_base_class = Base
 
 
+@pytest.mark.skipif(IS_WINDOWS)
 class TestPrettyyTablePostgres(PrettyTableTestBase):
     engine = engine_psql
     declarative_base_class = Base

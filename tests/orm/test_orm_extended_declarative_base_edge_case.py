@@ -2,6 +2,7 @@
 
 import pytest
 from sqlalchemy_mate.tests import (
+    IS_WINDOWS,
     engine_sqlite, engine_psql, BaseClassForOrmTest,
     Base, BankAccount, PostTagAssociation,
 )
@@ -67,6 +68,7 @@ class TestExtendedBaseOnSqlite(ExtendedBaseEdgeCaseTestBase):  # test on sqlite
     declarative_base_class = Base
 
 
+@pytest.mark.skipif(IS_WINDOWS)
 class TestExtendedBaseOnPostgres(ExtendedBaseEdgeCaseTestBase):  # test on postgres
     engine = engine_psql
     declarative_base_class = Base

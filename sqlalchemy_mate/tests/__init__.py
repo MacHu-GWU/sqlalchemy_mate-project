@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import typing
 
 from sqlalchemy import String, Integer
@@ -10,6 +11,8 @@ from sqlalchemy.orm.session import sessionmaker, Session
 
 from ..engine_creator import EngineCreator
 from ..orm.extended_declarative_base import ExtendedBase
+
+IS_WINDOWS = sys.platform.lower().startswith("win")
 
 # use make run-psql to run postgres container on local
 engine_sqlite = create_engine("sqlite:///:memory:")
