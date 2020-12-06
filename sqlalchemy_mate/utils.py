@@ -119,6 +119,11 @@ def execute_query_return_result_proxy(query):
 from .pkg import timeout_decorator
 
 
+@timeout_decorator.timeout(0.000001, use_signals=False)
+def _test_connection_0(engine):
+    v = engine.execute(sa.text("SELECT 1;")).fetchall()[0][0]
+    assert v == 1
+
 @timeout_decorator.timeout(1, use_signals=False)
 def _test_connection_1(engine):
     v = engine.execute(sa.text("SELECT 1;")).fetchall()[0][0]
@@ -140,6 +145,7 @@ def _test_connection_30(engine):
     assert v == 1
 
 _test_connection_mapper = {
+    0: _test_connection_0,
     1: _test_connection_1,
     3: _test_connection_3,
     10: _test_connection_10,
