@@ -68,7 +68,8 @@ class TestExtendedBaseOnSqlite(ExtendedBaseEdgeCaseTestBase):  # test on sqlite
     declarative_base_class = Base
 
 
-@pytest.mark.skipif(IS_WINDOWS)
+@pytest.mark.skipif(IS_WINDOWS,
+                    reason="no psql service container for windows")
 class TestExtendedBaseOnPostgres(ExtendedBaseEdgeCaseTestBase):  # test on postgres
     engine = engine_psql
     declarative_base_class = Base

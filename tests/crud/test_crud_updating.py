@@ -58,7 +58,8 @@ class TestUpdatingApiSqlite(UpdatingApiBaseTest):
     engine = engine_sqlite
 
 
-@pytest.mark.skipif(IS_WINDOWS)
+@pytest.mark.skipif(IS_WINDOWS,
+                    reason="no psql service container for windows")
 class TestUpdatingApiPostgres(UpdatingApiBaseTest):
     engine = engine_psql
 

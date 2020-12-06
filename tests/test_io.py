@@ -36,7 +36,8 @@ class TestDataIOSqlite(DataIOTestBase):
     engine = engine_sqlite
 
 
-@pytest.mark.skipif(IS_WINDOWS)
+@pytest.mark.skipif(IS_WINDOWS,
+                    reason="no psql service container for windows")
 class TestDataIOPostgres(DataIOTestBase):
     engine = engine_psql
 

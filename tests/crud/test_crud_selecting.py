@@ -80,7 +80,8 @@ class TestSelectingApiSqlite(SelectingApiBaseTest):
     engine = engine_sqlite
 
 
-@pytest.mark.skipif(IS_WINDOWS)
+@pytest.mark.skipif(IS_WINDOWS,
+                    reason="no psql service container for windows")
 class TestSelectingApiPostgres(SelectingApiBaseTest):
     engine = engine_psql
 

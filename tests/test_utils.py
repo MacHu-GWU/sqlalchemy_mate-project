@@ -59,7 +59,8 @@ class TestUtilitySqlite(UtilityTestBase):
     declarative_base_class = Base
 
 
-@pytest.mark.skipif(IS_WINDOWS)
+@pytest.mark.skipif(IS_WINDOWS,
+                    reason="no psql service container for windows")
 class TestUtilityPostgres(UtilityTestBase):
     engine = engine_psql
     declarative_base_class = Base
