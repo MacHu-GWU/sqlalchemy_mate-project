@@ -36,7 +36,7 @@ def test_timeout():
 
     engine = EngineCreator().create_sqlite()
     with pytest.raises(TimeoutError):
-        utils.test_connection(engine, timeout=0)
+        utils.test_connection(engine, timeout=0.000001)
     utils.test_connection(engine, timeout=3)
 
 
