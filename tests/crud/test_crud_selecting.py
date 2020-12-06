@@ -56,7 +56,8 @@ class SelectingApiBaseTest(BaseClassForTest):
         )
 
     def test_select_distinct_column(self):
-        assert selecting.select_distinct_column(self.engine, t_inv.c.store_id) == [1, 2]
+        # postgres db won't return item in its original insertion order with distinct statement
+        assert selecting.select_distinct_column(self.engine, t_inv.c.store_id) in [[1, 2], [2, 1]]
         result = selecting.select_distinct_column(
             self.engine, t_inv.c.store_id, t_inv.c.item_id
         )
