@@ -53,7 +53,7 @@ jobs:
           python -m site
           python -m pip install --upgrade pip setuptools wheel virtualenv codecov
           pip install .
-          pip install -r requirements-test.tx
+          pip install -r requirements-test.txt
 
       - name: "Run pytest"
         run: "python -m pytest tests --cov=sqlalchemy_mate"
