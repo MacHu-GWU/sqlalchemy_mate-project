@@ -2,8 +2,8 @@
     :target: https://sqlalchemy_mate.readthedocs.io/index.html
     :alt: Documentation Status
 
-.. image:: https://travis-ci.org/MacHu-GWU/sqlalchemy_mate-project.svg?branch=master
-    :target: https://travis-ci.org/MacHu-GWU/sqlalchemy_mate-project?branch=master
+.. image:: https://github.com/MacHu-GWU/sqlalchemy_mate-project/workflows/CI/badge.svg
+    :target: https://github.com/MacHu-GWU/sqlalchemy_mate-project/actions?query=workflow:CI
 
 .. image:: https://codecov.io/gh/MacHu-GWU/sqlalchemy_mate-project/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/MacHu-GWU/sqlalchemy_mate-project
