@@ -15,8 +15,8 @@ Release and Version History
 **Miscellaneous**
 
 
-0.0.11 (TODO)
-~~~~~~~~~~~~~
+0.0.11 (2020-12-05)
+~~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
 
 - ``ExtendedBase.by_id`` is renamed to ``ExtendedBase.by_pk``. The old method name is kept for backward API compatibility.
@@ -31,6 +31,8 @@ Release and Version History
 **Bugfixes**
 
 **Miscellaneous**
+
+- use in-package timeout_decorator library to ensure api compatibility
 
 
 0.0.10 (2019-04-26)
