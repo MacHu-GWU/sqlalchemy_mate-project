@@ -119,15 +119,39 @@ def execute_query_return_result_proxy(query):
 from .pkg import timeout_decorator
 
 
-@timeout_decorator.timeout(3, use_signals=False)
-def _test_connection(engine):
+@timeout_decorator.timeout(1, use_signals=False)
+def _test_connection_1(engine):
     v = engine.execute(sa.text("SELECT 1;")).fetchall()[0][0]
     assert v == 1
 
+@timeout_decorator.timeout(3, use_signals=False)
+def _test_connection_3(engine):
+    v = engine.execute(sa.text("SELECT 1;")).fetchall()[0][0]
+    assert v == 1
+
+@timeout_decorator.timeout(10, use_signals=False)
+def _test_connection_10(engine):
+    v = engine.execute(sa.text("SELECT 1;")).fetchall()[0][0]
+    assert v == 1
+
+@timeout_decorator.timeout(30, use_signals=False)
+def _test_connection_30(engine):
+    v = engine.execute(sa.text("SELECT 1;")).fetchall()[0][0]
+    assert v == 1
+
+_test_connection_mapper = {
+    1: _test_connection_1,
+    3: _test_connection_3,
+    10: _test_connection_10,
+    30: _test_connection_30,
+}
 
 def test_connection(engine, timeout=3):
+    if timeout not in _test_connection_mapper: # pragma: no cover
+        raise ValueError("timeout only support {} seconds".format(list(_test_connection_mapper)))
+
     try:
-        _test_connection(engine)
+        _test_connection_mapper[timeout](engine)
         return True
     except timeout_decorator.TimeoutError:
         raise timeout_decorator.TimeoutError(
