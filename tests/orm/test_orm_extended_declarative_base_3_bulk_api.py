@@ -202,7 +202,10 @@ class BulkOperationTestBase(BaseTest):
             result2 = Order.random_sample(ses, limit=5)
             assert len(result2) == 5
 
-        assert result1[0].id != result2[0].id
+        assert sum([
+            od1.id != od2.id
+            for od1, od2 in zip(result1, result2)
+        ]) >= 1
 
         self.psql_only_test_case()
 

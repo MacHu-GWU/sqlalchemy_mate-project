@@ -90,19 +90,27 @@ class SelectingApiBaseTest(BaseTest):
     def test_select_random(self):
         id_set = set(range(1, 1000 + 1))
 
-        results = selecting.select_random(
-            engine=self.engine, table=t_smart_insert, limit=5,
-        ).all()
-        assert len(results) == 5
-        for (id_,) in results:
-            assert id_ in id_set
+        results1 = [
+            id_
+            for (id_,) in selecting.select_random(
+                engine=self.engine, table=t_smart_insert, limit=5,
+            )
+        ]
+        assert len(results1) == 5
 
-        results = selecting.select_random(
-            engine=self.engine, columns=[t_smart_insert.c.id], limit=5,
-        ).all()
-        assert len(results) == 5
-        for (id_,) in results:
-            assert id_ in id_set
+        results2 = [
+            id_
+            for (id_,) in selecting.select_random(
+                engine=self.engine, columns=[t_smart_insert.c.id], limit=5,
+            )
+        ]
+        assert len(results2) == 5
+
+        # at least one element not the same
+        assert sum([
+            i1 != i2
+            for i1, i2 in zip(results1, results2)
+        ]) >= 1
 
         with pytest.raises(ValueError):
             selecting.select_random(engine=self.engine)
