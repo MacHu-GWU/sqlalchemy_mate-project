@@ -33,7 +33,7 @@ class BulkOperationTestBase(BaseTest):
         测试smart_insert的基本功能, 以及与普通的insert比较性能。
         """
         # ------ Before State ------
-        scale = 6
+        scale = 10
         n_exist = scale
         n_all = scale ** 3
 

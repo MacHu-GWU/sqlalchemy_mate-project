@@ -32,7 +32,7 @@ class InsertingApiBaseTest(BaseTest):
         """
         # Use Smart Insert Method
         # ------ Before State ------
-        scale = 5  # 测试数据的数量级, 总数据量是已有的数据量的立方, 建议 5 ~ 10
+        scale = 10  # 测试数据的数量级, 总数据量是已有的数据量的立方, 建议 5 ~ 10
         n_exist = scale
         n_all = scale ** 3
 
