@@ -1,3 +1,2 @@
 sqlalchemy>=1.4.1<2.0.0
 prettytable
-decorator
