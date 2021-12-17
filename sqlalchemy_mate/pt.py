@@ -13,144 +13,132 @@ ResultProxy, 而不是 ORM 对象的列表. 所以在 :func:`from_object`, :func
 最终返回 ResultProxy.
 """
 
-try:
-    from typing import Union, Any
-    from sqlalchemy.engine import Engine
-    from sqlalchemy.orm.session import Session
-except ImportError:  # pragma: no cover
-    pass
-
+from typing import Union, Tuple, List, Any, Iterable
+import enum
+import sqlalchemy as sa
 from sqlalchemy import select, Table
-from sqlalchemy.orm import Query
-from sqlalchemy.ext.declarative.api import DeclarativeMeta
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
+
+from sqlalchemy.orm import DeclarativeMeta
 from sqlalchemy.sql.selectable import Select
 from sqlalchemy.sql.elements import TextClause
-from sqlalchemy.engine.result import ResultProxy
+from sqlalchemy.engine.result import Result, ScalarResult, Row
 
-from .utils import ensure_session, execute_query_return_result_proxy
-from .pkg.prettytable import from_db_cursor, PrettyTable
+from prettytable import PrettyTable
+
+from .utils import ensure_session, clean_session
 
 
-def from_stmt(stmt, engine, **kwargs):
+def get_keys_values(item) -> Tuple[Union[list, tuple], Union[list, tuple]]:
+    if isinstance(item.__class__, DeclarativeMeta):
+        keys, values = list(), list()
+        for column in item.__class__.__table__.columns:
+            keys.append(column.name)
+            values.append(getattr(item, column.name))
+        return keys, values
+    elif isinstance(item, Row):
+        return list(item.keys()), list(item)
+    else:  # pragma: no cover
+        raise TypeError
+
+
+def from_result(result: Union[Result, ScalarResult]):
+    pt = PrettyTable()
+    try:
+        first_item = next(result)
+        keys, values = get_keys_values(first_item)
+        pt.field_names = keys
+        pt.add_row(values)
+    except StopIteration:
+        return pt
+
+    if isinstance(result, ScalarResult):
+        for obj in result:
+            pt.add_row([getattr(obj, key) for key in keys])
+    elif isinstance(result, Result):
+        for row in result:
+            pt.add_row(list(row))
+    else:
+        raise Exception
+
+    return pt
+
+
+def from_text_clause(
+    t: TextClause,
+    engine: Engine,
+    **kwargs
+) -> PrettyTable:
     """
     Execute a query in form of texture clause, return the result in form of
-
     :class:`PrettyTable`.
-
-    :type stmt: TextClause
-    :param stmt:
-
-    :type engine: Engine
-    :param engine:
-
-    :rtype: PrettyTable
     """
-    result_proxy = engine.execute(stmt, **kwargs)
-    return from_db_cursor(result_proxy.cursor)
+    with engine.connect() as connection:
+        result = connection.execute(t, **kwargs)
+        return from_result(result)
 
 
-def from_sql(sql, engine, limit=None, **kwargs):
+def from_stmt(
+    stmt: Select,
+    engine: Engine,
+    **kwargs
+) -> PrettyTable:
     """
     Create a :class:`prettytable.PrettyTable` from :class:`sqlalchemy.select`.
 
-    :type sql: Select
     :param sql: a ``sqlalchemy.sql.selectable.Select`` object.
-
-    :type engine: Engine
     :param engine: an ``sqlalchemy.engine.base.Engine`` object.
 
-    :type limit: int
-    :param limit: int, limit rows to return.
-
-    :rtype: PrettyTable
-
     **中文文档**
 
-    将sqlalchemy的sql expression query结果放入prettytable中.
-
-    .. note::
-
-        注意, from_db_cursor是从原生的数据库游标通过调用fetchall()方法来获取数据。
-        而sqlalchemy返回的是ResultProxy类。所以我们需要从中获取游标
-        至于为什么不能直接使用 from_db_cursor(engine.execute(sql).cursor) 的语法
-        我也不知道为什么.
+    将 sqlalchemy 的 sql expression query 结果放入 prettytable 中.
     """
-    if limit is not None:
-        sql = sql.limit(limit)
-    result_proxy = engine.execute(sql)
-    return from_db_cursor(result_proxy.cursor)
+    with engine.connect() as connection:
+        result = connection.execute(stmt, **kwargs)
+        return from_result(result)
 
 
-def from_query(query, engine_or_session=None, limit=None, **kwargs):
-    """
-    Execute an ORM style query, and return the result in
-    :class:`prettytable.PrettyTable`.
-
-    :type query: Query
-    :param query: an ``sqlalchemy.orm.Query`` object.
-
-    :type engine: Any
-    :param engine: query is always associated with a session, this parameter
-        just reserve the arg place.
-
-    :type limit: int
-    :param limit: int, limit rows to return.
-
-    :rtype: PrettyTable
-    :return: a ``prettytable.PrettyTable`` object
-
-    **中文文档**
-
-    将通过 ORM 的查询结果中的数据放入 :class:`PrettyTable` 中.
-    """
-    if limit is not None:
-        query = query.limit(limit)
-    result_proxy = execute_query_return_result_proxy(query)
-    return from_db_cursor(result_proxy.cursor)
-
-
-def from_table(table, engine, limit=None, **kwargs):
+def from_table(
+    table: Table,
+    engine: Engine,
+    limit: int = None,
+    **kwargs
+) -> PrettyTable:
     """
     Select data in a database table and put into prettytable.
 
     Create a :class:`prettytable.PrettyTable` from :class:`sqlalchemy.Table`.
 
-    :type table: Table
     :param table: a ``sqlalchemy.sql.schema.Table`` object
-
-    :type engine: Engine
     :param engine: the engine or session used to execute the query.
-
-    :type limit: int
     :param limit: int, limit rows to return.
-
-    :rtype: PrettyTable
 
     **中文文档**
 
     将数据表中的数据放入 PrettyTable 中.
     """
-    sql = select([table])
+    stmt = select([table])
     if limit is not None:
-        sql = sql.limit(limit)
-    result_proxy = engine.execute(sql, **kwargs)
-    return from_db_cursor(result_proxy.cursor)
+        stmt = stmt.limit(limit)
+    with engine.connect() as connection:
+        result = connection.execute(stmt, **kwargs)
+        return from_result(result)
 
 
-def from_object(orm_class, engine_or_session, limit=None, **kwargs):
+def from_model(
+    orm_class,
+    engine_or_session: Union[Engine, Session],
+    limit: int = None,
+    **kwargs
+):
     """
     Select data from the table defined by a ORM class, and put into prettytable
 
     :param orm_class: an orm class inherit from
         ``sqlalchemy.ext.declarative.declarative_base()``
-
-    :type engine_or_session: Union[Engine, Session]
     :param engine_or_session: the engine or session used to execute the query.
-
-    :type limit: int
     :param limit: int, limit rows to return.
-
-    :rtype: PrettyTable
 
     **中文文档**
 
@@ -158,43 +146,38 @@ def from_object(orm_class, engine_or_session, limit=None, **kwargs):
 
     常用于快速预览某个对象背后的数据.
     """
-
     ses, auto_close = ensure_session(engine_or_session)
-    query = ses.query(orm_class)
+    stmt = select(orm_class.__table__)
     if limit is not None:
-        query = query.limit(limit)
-    result_proxy = execute_query_return_result_proxy(query)
-    if auto_close:
-        ses.close()
-    return from_db_cursor(result_proxy.cursor)
+        stmt = stmt.limit(limit)
+    result = ses.execute(stmt, **kwargs)
+    tb = from_result(result)
+    clean_session(ses, auto_close)
+    return tb
 
 
-def from_resultproxy(result_proxy, **kwargs):
+def from_dict_list(data: List[dict]) -> PrettyTable:
     """
-    Construct a Prettytable from ``ResultProxy``.
-
-    :param result_proxy: a ``sqlalchemy.engine.result.ResultProxy`` object.
+    Construct a Prettytable from list of dictionary.
     """
-    return from_db_cursor(result_proxy.cursor)
-
-
-def from_data(data):
-    """
-    Construct a Prettytable from list of rows.
-
-    :rtype: PrettyTable
-    """
+    tb = PrettyTable()
     if len(data) == 0:  # pragma: no cover
-        return None
+        return tb
     else:
-        ptable = PrettyTable()
-        ptable.field_names = data[0].keys()
+        tb.field_names = list(data[0].keys())
         for row in data:
-            ptable.add_row(row)
-        return ptable
+            tb.add_row(list(row.values()))
+        return tb
 
 
-def from_everything(everything, engine_or_session, limit=None, **kwargs):
+def from_everything(
+    everything: Union[
+        TextClause, Select, Table, List[dict]
+    ],
+    engine_or_session: Union[Engine, Session],
+    limit: int = None,
+    **kwargs
+):
     """
     Construct a Prettytable from any kinds of sqlalchemy query.
 
@@ -215,22 +198,21 @@ def from_everything(everything, engine_or_session, limit=None, **kwargs):
         session.query(User)
     """
     if isinstance(everything, TextClause):
+        return from_text_clause(everything, engine_or_session, **kwargs)
+
+    if isinstance(everything, Select):
         return from_stmt(everything, engine_or_session, **kwargs)
 
     if isinstance(everything, Table):
         return from_table(everything, engine_or_session, limit=limit, **kwargs)
 
-    if type(everything) is DeclarativeMeta:
-        return from_object(everything, engine_or_session, limit=limit, **kwargs)
+    if isinstance(everything, DeclarativeMeta):
+        return from_model(everything, engine_or_session, limit=limit, **kwargs)
 
-    if isinstance(everything, Query):
-        return from_query(everything, engine_or_session, limit=limit, **kwargs)
-
-    if isinstance(everything, Select):
-        return from_sql(everything, engine_or_session, limit=limit, **kwargs)
-
-    if isinstance(everything, ResultProxy):
-        return from_resultproxy(everything, **kwargs)
+    if isinstance(everything, Result):
+        return from_result(everything)
 
     if isinstance(everything, list):
-        return from_data(everything, **kwargs)
+        return from_dict_list(everything)
+
+    raise Exception

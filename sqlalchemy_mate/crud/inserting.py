@@ -5,31 +5,29 @@ This module provide utility functions for insert operation.
 """
 
 import math
-from typing import Union, List
+from typing import Union, List, Tuple
+from sqlalchemy import Table
+from sqlalchemy.engine import Engine, Connection
 from sqlalchemy.exc import IntegrityError
 
-try:
-    from ..utils import grouper_list
-except:  # pragma: no cover
-    from sqlalchemy_mate.utils import grouper_list
-
-try:  # for type hint only
-    from sqlalchemy import Table
-    from sqlalchemy.engine import Engine
-except ImportError:  # pragma: no cover
-    pass
+from ..utils import grouper_list
 
 
-def smart_insert(engine, table, data, minimal_size=5, op_counter=0):
+def smart_insert(
+    engine: Engine,
+    table: Table,
+    data: Union[dict, List[dict]],
+    minimal_size: int = 5,
+    _connection: Connection = None,
+    _op_counter: int = 0,
+    _ins_counter: int = 0,
+    _is_first_call: bool = True,
+) -> Tuple[int, int]:
     """
     An optimized Insert strategy. Guarantee successful and highest insertion
     speed. But ATOMIC WRITE IS NOT ENSURED IF THE PROGRAM IS INTERRUPTED.
 
-    :type engine: Engine
-    :type table: Table
-    :type data: Union[dict, List[dict]]
-    :type minimal_size: int
-    :type op_counter: int
+    :return: number of successful INSERT sql execution; number of inserted rows.
 
     **中文文档**
 
@@ -44,13 +42,17 @@ def smart_insert(engine, table, data, minimal_size=5, op_counter=0):
     该Insert策略在内存上需要额外的 sqrt(nbytes) 的开销, 跟原数据相比体积很小。
     但时间上是各种情况下平均最优的。
     """
+    if _connection is None:
+        _connection = engine.connect()
+
     insert = table.insert()
 
     if isinstance(data, list):
         # 首先进行尝试bulk insert
         try:
-            engine.execute(insert, data)
-            op_counter += 1
+            _connection.execute(insert, data)
+            _op_counter += 1
+            _ins_counter += len(data)
         # 失败了
         except IntegrityError:
             # 分析数据量
@@ -60,20 +62,33 @@ def smart_insert(engine, table, data, minimal_size=5, op_counter=0):
                 # 则进行分包
                 n_chunk = math.floor(math.sqrt(n))
                 for chunk in grouper_list(data, n_chunk):
-                    op_counter = smart_insert(
-                        engine, table, chunk, minimal_size, op_counter)
+                    _op_counter, _ins_counter = smart_insert(
+                        engine=engine,
+                        table=table,
+                        data=chunk,
+                        minimal_size=minimal_size,
+                        _connection=_connection,
+                        _op_counter=_op_counter,
+                        _ins_counter=_ins_counter,
+                        _is_first_call=False
+                    )
             # 否则则一条条地逐条插入
             else:
                 for row in data:
                     try:
-                        engine.execute(insert, row)
-                        op_counter += 1
+                        _connection.execute(insert, row)
+                        _op_counter += 1
+                        _ins_counter += 1
                     except IntegrityError:
                         pass
     else:
         try:
-            engine.execute(insert, data)
+            _connection.execute(insert, data)
+            _op_counter += 1
+            _ins_counter += 1
         except IntegrityError:
             pass
 
-    return op_counter
+    if _is_first_call:
+        _connection.close()
+    return _op_counter, _ins_counter

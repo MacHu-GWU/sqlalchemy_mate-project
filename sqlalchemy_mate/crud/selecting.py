@@ -4,110 +4,153 @@
 This module provide utility functions for select operation.
 """
 
-from sqlalchemy import select, func, Column
+from typing import List, Iterable
+from sqlalchemy import select, func, Column, Table
+from sqlalchemy.engine import Engine, Result
+from ..utils import ensure_exact_one_arg_is_not_none
 
 
-def count_row(engine, table):
+def count_row(
+    engine: Engine,
+    table: Table,
+) -> int:
     """
     Return number of rows in a table.
 
-    Example::
+    Example:
 
-        >>> count_row(engine, table_user)
+        >>> import sqlalchemy as sa
+        >>> t_user = sa.Table()
+        >>> count_row(engine, t_user)
         3
 
     **中文文档**
 
     返回一个表中的行数。
     """
-    return engine.execute(select([func.count()]).select_from(table)).fetchone()[0]
+    return engine.execute(
+        select([func.count()]).select_from(table)
+    ).fetchone()[0]
 
 
-def select_all(engine, table):
+def select_all(
+    engine: Engine,
+    table: Table,
+) -> Result:
     """
     Select everything from a table.
-
-    Example::
-
-        >>> list(select_all(engine, table_user))
-        [(1, "Alice"), (2, "Bob"), (3, "Cathy")]
-
-    **中文文档**
-
-    选取所有数据。
     """
     s = select([table])
-    return engine.execute(s)
+    with engine.connect() as connection:
+        return connection.execute(s)
 
 
-def select_single_column(engine, column):
+def select_single_column(
+    engine: Engine,
+    column: Column,
+) -> list:
     """
     Select data from single column.
-
-    Example::
-
-        >>> select_single_column(engine, table_user.c.id)
-        [1, 2, 3]
-
-        >>> select_single_column(engine, table_user.c.name)
-        ["Alice", "Bob", "Cathy"]
     """
     s = select([column])
-    return column.name, [row[0] for row in engine.execute(s)]
+    with engine.connect() as connection:
+        return [row[0] for row in connection.execute(s)]
 
 
-def select_many_column(engine, *columns):
+def select_many_column(
+    engine: Engine,
+    columns: List[Column],
+) -> List[tuple]:
     """
     Select data from multiple columns.
-
-    Example::
-
-        >>> select_many_column(engine, table_user.c.id, table_user.c.name)
-
-
-    :param columns: list of sqlalchemy.Column instance
-
-    :returns headers: headers
-    :returns data: list of row
-
-    **中文文档**
-
-    返回多列中的数据。
     """
-    if isinstance(columns[0], Column):
-        pass
-    elif isinstance(columns[0], (list, tuple)):
-        columns = columns[0]
     s = select(columns)
-    headers = [str(column) for column in columns]
-    data = [tuple(row) for row in engine.execute(s)]
-    return headers, data
+    with engine.connect() as connection:
+        return [tuple(row) for row in connection.execute(s)]
 
 
-def select_distinct_column(engine, *columns):
+def select_single_distinct(
+    engine: Engine,
+    column: Column,
+) -> list:
     """
-    Select distinct column(columns).
-
-    :returns: if single column, return list, if multiple column, return matrix.
-
-    **中文文档**
-
-    distinct语句的语法糖函数。
+    Select distinct data from single column.
     """
-    if isinstance(columns[0], Column):
-        pass
-    elif isinstance(columns[0], (list, tuple)):  # pragma: no cover
-        columns = columns[0]
+    s = select([column]).distinct()
+    with engine.connect() as connection:
+        return [row[0] for row in connection.execute(s)]
+
+
+def select_many_distinct(
+    engine: Engine,
+    columns: List[Column],
+) -> List[tuple]:
+    """
+    Select distinct data from multiple columns.
+    """
     s = select(columns).distinct()
-    if len(columns) == 1:
-        return [row[0] for row in engine.execute(s)]
-    else:
-        return [tuple(row) for row in engine.execute(s)]
+    with engine.connect() as connection:
+        return [tuple(row) for row in connection.execute(s)]
 
 
-def select_random(engine, table_or_columns, limit=5):
+def select_random(
+    engine: Engine,
+    table: Table = None,
+    columns: List[Column] = None,
+    limit: int = None,
+    perc: int = None
+) -> Result:
     """
     Randomly select some rows from table.
     """
-    s = select(table_or_columns).order_by(func.random()).limit(limit)
-    return engine.execute(s).fetchall()
+    ensure_exact_one_arg_is_not_none(limit, perc)
+    ensure_exact_one_arg_is_not_none(table, columns)
+
+    if table is not None:
+        if limit is not None:
+            stmt = select(table).order_by(func.random()).limit(limit)
+        else:
+            if perc >= 100 or perc <= 0:
+                raise ValueError
+
+            selectable = table.tablesample(
+                func.bernoulli(perc),
+                name="alias",
+                seed=func.random()
+            )
+            args = [
+                getattr(selectable.c, column.name)
+                for column in table.columns
+            ]
+            stmt = select(*args)
+    elif columns is not None:
+        if limit is not None:
+            stmt = select(columns).order_by(func.random()).limit(limit)
+        else:
+            if perc >= 100 or perc <= 0:
+                raise ValueError
+            selectable = columns[0].table.tablesample(
+                func.bernoulli(perc),
+                name="alias",
+                seed=func.random()
+            )
+            args = [
+                getattr(selectable.c, column.name)
+                for column in columns
+            ]
+            stmt = select(*args)
+    else:  # pragma: no cover, for readability only
+        raise NotImplementedError
+
+    with engine.connect() as connection:
+        return connection.execute(stmt)
+
+
+def yield_tuple(result: Result) -> Iterable[tuple]:
+    for row in result:
+        yield tuple(row)
+
+
+def yield_dict(result: Result) -> Iterable[dict]:
+    for row in result:
+        yield dict(row)

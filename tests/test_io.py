@@ -4,7 +4,7 @@ import pytest
 
 from sqlalchemy_mate import io
 from sqlalchemy_mate.tests import (
-    IS_WINDOWS, engine_sqlite, engine_psql, t_user, BaseClassForTest,
+    IS_WINDOWS, engine_sqlite, engine_psql, t_user, BaseTest,
 )
 
 
@@ -18,14 +18,17 @@ def teardown_module(module):
         pass
 
 
-class DataIOTestBase(BaseClassForTest):
+class DataIOTestBase(BaseTest):
     @classmethod
     def class_level_data_setup(cls):
-        cls.engine.execute(t_user.delete())
-        data = [{"user_id": 1, "name": "Alice"},
+        with cls.engine.connect() as connection:
+            connection.execute(t_user.delete())
+            data = [
+                {"user_id": 1, "name": "Alice"},
                 {"user_id": 2, "name": "Bob"},
-                {"user_id": 3, "name": "Cathy"}]
-        cls.engine.execute(t_user.insert(), data)
+                {"user_id": 3, "name": "Cathy"},
+            ]
+            connection.execute(t_user.insert(), data)
 
     def test_table_to_csv(self):
         filepath = __file__.replace("test_io.py", "t_user.csv")
@@ -36,8 +39,10 @@ class TestDataIOSqlite(DataIOTestBase):
     engine = engine_sqlite
 
 
-@pytest.mark.skipif(IS_WINDOWS,
-                    reason="no psql service container for windows")
+@pytest.mark.skipif(
+    IS_WINDOWS,
+    reason="no psql service container for windows",
+)
 class TestDataIOPostgres(DataIOTestBase):
     engine = engine_psql
 

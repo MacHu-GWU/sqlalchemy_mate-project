@@ -93,17 +93,22 @@ class TestExtendedBaseOOP:
     def test_primary_key_and_id_field(self):
         assert User.pk_names() == ("id",)
         assert tuple([field.name for field in User.pk_fields()]) == ("id",)
+        assert User(id=1).pk_values() == (1,)
+
         assert User.id_field_name() == "id"
         assert User.id_field().name == "id"
-        assert User(id=1).pk_values() == (1,)
         assert User(id=1).id_field_value() == 1
 
         assert Association.pk_names() == ("x_id", "y_id")
         assert tuple([field.name for field in Association.pk_fields()]) == ("x_id", "y_id")
+        assert Association(x_id=1, y_id=2).pk_values() == (1, 2)
+
         with raises(ValueError):
             Association.id_field_name()
+
+        with raises(ValueError):
             Association.id_field()
-        assert Association(x_id=1, y_id=2).pk_values() == (1, 2)
+
         with raises(ValueError):
             Association(x_id=1, y_id=2).id_field_value()
 

@@ -3,12 +3,12 @@
 import pytest
 from sqlalchemy_mate.tests import (
     IS_WINDOWS,
-    engine_sqlite, engine_psql, BaseClassForOrmTest,
+    engine_sqlite, engine_psql, BaseTest,
     Base, BankAccount, PostTagAssociation,
 )
 
 
-class ExtendedBaseEdgeCaseTestBase(BaseClassForOrmTest):
+class ExtendedBaseEdgeCaseTestBase(BaseTest):
     def test_absorb(self):
         user1 = BankAccount(id=1, name="Alice", pin="1234")
         user2 = BankAccount(name="Bob")
@@ -34,45 +34,36 @@ class ExtendedBaseEdgeCaseTestBase(BaseClassForOrmTest):
         assert user1.values() == [1, "Bob", None]
 
     def test_by_pk(self):
-        PostTagAssociation._settings_engine = self.engine
-
         PostTagAssociation.smart_insert(
-            PostTagAssociation.get_eng(), [
+            self.eng,
+            [
                 PostTagAssociation(post_id=1, tag_id=1, description="1-1"),
                 PostTagAssociation(post_id=1, tag_id=2, description="1-2"),
             ]
         )
         PostTagAssociation.smart_insert(
-            PostTagAssociation.get_ses(), [
+            self.eng,
+            [
                 PostTagAssociation(post_id=1, tag_id=3, description="1-3"),
                 PostTagAssociation(post_id=1, tag_id=4, description="1-4"),
             ]
         )
 
-        pta = PostTagAssociation.by_pk((1, 2), self.ses)
+        pta = PostTagAssociation.by_pk((1, 2), self.eng)
         assert pta.post_id == 1
         assert pta.tag_id == 2
-
-    def test_engine_and_session(self):
-        PostTagAssociation._settings_engine = self.engine
-
-        PostTagAssociation.make_session()
-        PostTagAssociation.close_session()
-        PostTagAssociation.get_eng()
-        PostTagAssociation.get_ses()
-        PostTagAssociation.close_session()
 
 
 class TestExtendedBaseOnSqlite(ExtendedBaseEdgeCaseTestBase):  # test on sqlite
     engine = engine_sqlite
-    declarative_base_class = Base
 
 
-@pytest.mark.skipif(IS_WINDOWS,
-                    reason="no psql service container for windows")
+@pytest.mark.skipif(
+    IS_WINDOWS,
+    reason="no psql service container for windows",
+)
 class TestExtendedBaseOnPostgres(ExtendedBaseEdgeCaseTestBase):  # test on postgres
     engine = engine_psql
-    declarative_base_class = Base
 
 
 if __name__ == "__main__":

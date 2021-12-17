@@ -3,11 +3,13 @@
 import sys
 
 import pytest
-
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 from sqlalchemy_mate import utils
+from sqlalchemy_mate import EngineCreator, TimeoutError
 from sqlalchemy_mate.tests import (
     IS_WINDOWS,
-    engine_sqlite, engine_psql, User, Base, BaseClassForTest,
+    engine_sqlite, engine_psql, User, BaseTest,
 )
 
 
@@ -17,53 +19,45 @@ def test_ensure_list():
     assert utils.ensure_list((1, 2, 3)) == (1, 2, 3)
 
 
-def test_timeout():
-    from sqlalchemy_mate import EngineCreator, TimeoutError
-
-    if sys.platform.lower().startswith("win"):
-        return
-
-    engine = EngineCreator(
-        host="stampy.db.elephantsql.com", port=5432,
-        database="diyvavwx", username="diyvavwx", password="wrongpassword"
-    ).create_postgresql_psycopg2()
-    with pytest.raises(Exception):
-        utils.test_connection(engine, timeout=10)
-
-    engine = EngineCreator().create_sqlite()
-    with pytest.raises(TimeoutError):
-        utils.test_connection(engine, timeout=0.000001)
-    utils.test_connection(engine, timeout=3)
-
-
-class UtilityTestBase(BaseClassForTest):
-    @classmethod
-    def class_level_data_setup(cls):
-        cls.engine.execute(User.__table__.delete())
-        cls.session.add_all([
-            User(id=1, name="Alice"),
-            User(id=2, name="Bob"),
-            User(id=3, name="Cathy"),
-        ])
-        cls.session.commit()
-
-    def test_convert_query_to_sql_statement(self):
-        query = self.session.query(User)
-        sql = utils.convert_query_to_sql_statement(query)
-        assert len(self.engine.execute(sql).fetchall()) == 3
-        self.session.close()
+class UtilityTestBase(BaseTest):
+    def test_timeout_good_case(self):
+        utils.test_connection(self.engine, timeout=3)
+        # engine = EngineCreator(
+        #     host="stampy.db.elephantsql.com", port=5432,
+        #     database="diyvavwx", username="diyvavwx", password="wrongpassword"
+        # ).create_postgresql_psycopg2()
+        # with pytest.raises(Exception):
+        #     utils.test_connection(engine, timeout=10)
+        #
+        # engine = EngineCreator().create_sqlite()
+        # with pytest.raises(TimeoutError):
+        #     utils.test_connection(engine, timeout=0.000001)
+        # utils.test_connection(engine, timeout=3)
 
 
 class TestUtilitySqlite(UtilityTestBase):
     engine = engine_sqlite
-    declarative_base_class = Base
+
+    def test_timeout_bad_case(self):
+        with pytest.raises(TimeoutError):
+            engine = EngineCreator().create_sqlite()
+            utils.test_connection(engine, timeout=0.000001)
 
 
-@pytest.mark.skipif(IS_WINDOWS,
-                    reason="no psql service container for windows")
+@pytest.mark.skipif(
+    IS_WINDOWS,
+    reason="no psql service container for windows",
+)
 class TestUtilityPostgres(UtilityTestBase):
     engine = engine_psql
-    declarative_base_class = Base
+
+    def test_timeout_bad_case(self):
+        engine = EngineCreator(
+            host="stampy.db.elephantsql.com", port=5432,
+            database="diyvavwx", username="diyvavwx", password="wrongpassword"
+        ).create_postgresql_psycopg2()
+        with pytest.raises(Exception):
+            utils.test_connection(engine, timeout=10)
 
 
 if __name__ == "__main__":

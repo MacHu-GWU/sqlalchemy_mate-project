@@ -6,13 +6,20 @@ Database data/Local File I/O module.
 
 import os
 from sqlalchemy import select
+from sqlalchemy.engine import Engine
 
 
-def sql_to_csv(sql, engine, filepath, chunksize=1000, overwrite=False):
+def sql_to_csv(
+    stmt,
+    engine: Engine,
+    filepath: str,
+    chunksize: int = 1000,
+    overwrite: bool = False,
+):
     """
-    Export sql result to csv file.
+    Export sql stmt result to csv file.
 
-    :param sql: :class:`sqlalchemy.sql.selectable.Select` instance.
+    :param stmt: :class:`sqlalchemy.sql.selectable.Select` instance.
     :param engine: :class:`sqlalchemy.engine.base.Engine`.
     :param filepath: file path.
     :param chunksize: number of rows write to csv each time.
@@ -29,14 +36,14 @@ def sql_to_csv(sql, engine, filepath, chunksize=1000, overwrite=False):
 
     import pandas as pd
 
-    columns = [str(column.name) for column in sql.columns]
+    columns = [str(column.name) for column in stmt.columns]
     with open(filepath, "w") as f:
         # write header
         df = pd.DataFrame([], columns=columns)
         df.to_csv(f, header=True, index=False)
 
         # iterate big database table
-        result_proxy = engine.execute(sql)
+        result_proxy = engine.execute(stmt)
         while True:
             data = result_proxy.fetchmany(chunksize)
             if len(data) == 0:

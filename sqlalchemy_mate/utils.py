@@ -4,25 +4,26 @@
 Utilities function.
 """
 
+from typing import Type, Union, Tuple, Dict, Iterable
+
 import sqlalchemy as sa
-from sqlalchemy.engine.base import Engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.session import Session
-
-try:
-    from typing import Type, Union, Tuple
-except ImportError:  # pragma: no cover
-    pass
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import sessionmaker, Session
 
 
-def ensure_list(item):
+def ensure_exact_one_arg_is_not_none(*args):
+    if sum([bool(arg is not None) for arg in args]) != 1:
+        raise ValueError
+
+
+def ensure_list(item) -> list:
     if not isinstance(item, (list, tuple)):
         return [item, ]
     else:
         return item
 
 
-def grouper_list(l, n):
+def grouper_list(l: Iterable, n: int) -> Iterable[list]:
     """Evenly divide list into fixed-length piece, no filled value if chunk
     size smaller than fixed-length.
 
@@ -58,62 +59,43 @@ def grouper_list(l, n):
 session_klass_cache = dict()  # type: Dict[int, Type[Session]]
 
 
-def ensure_session(engine_or_session):
+def ensure_session(
+    engine_or_session: Union[Engine, Session]
+) -> Tuple[Session, bool]:
     """
     If it is an engine, then create a session from it. And indicate that
     this session should be closed after the job done.
 
-    :type engine_or_session: Union[Engine, Session]
-    :rtype: Tuple[Session, bool]
+    **中文文档**
+
+    在 ORM 中对数据进行操作主要是通过 Session. 如果传入的参数是 Engine, 则创建一个
+    Session, 用完之后是要 close 的, 所以 ``auto_close = True`` 因为这个
+    Session 反正是新创建的. 如果传入的参数是 Session, 用完之后是否 close 取决于业务,
+    所以 ``auto_close = False``.
     """
     if isinstance(engine_or_session, Engine):
         engine_id = id(engine_or_session)
-        if id(engine_id) in session_klass_cache:  # pragma: no cover
-            SessionClass = session_klass_cache[engine_id]
-        else:  # pragma: no cover
-            SessionClass = sessionmaker(bind=engine_or_session)
-        ses = SessionClass()
+        if engine_id not in session_klass_cache:  # pragma: no cover
+            session_klass_cache[engine_id] = sessionmaker(bind=engine_or_session)
+        SessionClass = session_klass_cache[engine_id]
+        session = SessionClass()
         auto_close = True
-        return ses, auto_close
+        return session, auto_close
     elif isinstance(engine_or_session, Session):
-        ses = engine_or_session
+        session = engine_or_session
         auto_close = False
-        return ses, auto_close
+        return session, auto_close
 
 
-def convert_query_to_sql_statement(query):
+def clean_session(
+    session: Session,
+    auto_close: bool,
+):
     """
-    Convert a Query object created from orm query, into executable sql statement.
-
-    :param query: :class:`sqlalchemy.orm.Query`
-
-    :return: :class:`sqlalchemy.sql.selectable.Select`
+    Close session if necessary. Just a syntax sugar.
     """
-    context = query._compile_context()
-    context.statement.use_labels = False
-    return context.statement
-
-
-def execute_query_return_result_proxy(query):
-    """
-    Execute a query, yield result proxy.
-
-    :param query: :class:`sqlalchemy.orm.Query`,
-        has to be created from ``session.query(Object)``
-
-    :return: :class:`sqlalchemy.engine.result.ResultProxy`
-    """
-    context = query._compile_context()
-    context.statement.use_labels = False
-    if query._autoflush and not query._populate_existing:
-        query.session._autoflush()
-
-    conn = query._get_bind_args(
-        context,
-        query._connection_from_session,
-        close_with_result=True)
-
-    return conn.execute(context.statement, query._params)
+    if auto_close:
+        session.close()
 
 
 from .pkg import timeout_decorator
@@ -124,6 +106,7 @@ def test_connection(engine, timeout=3):
     def _test_connection(engine):
         v = engine.execute(sa.text("SELECT 1;")).fetchall()[0][0]
         assert v == 1
+
     try:
         _test_connection(engine)
         return True

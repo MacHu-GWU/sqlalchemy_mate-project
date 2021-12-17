@@ -13,7 +13,7 @@ try:
     from . import engine_creator, io, pt
     from .utils import test_connection
     from .engine_creator import EngineCreator
-    from .crud import selecting, inserting, updating
+    from .crud import selecting, inserting, updating, deleting
     from .orm.extended_declarative_base import ExtendedBase
     from .pkg.timeout_decorator import TimeoutError
 except ImportError as e:  # pragma: no cover

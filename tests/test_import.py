@@ -6,17 +6,17 @@ import pytest
 def test():
     import sqlalchemy_mate as sm
 
-    sm.selecting.count_row
-    sm.inserting.smart_insert
-    sm.updating.upsert_all
+    _ = sm.selecting.count_row
+    _ = sm.inserting.smart_insert
+    _ = sm.updating.upsert_all
 
-    sm.io.sql_to_csv
-    sm.pt.from_everything
+    _ = sm.io.sql_to_csv
+    _ = sm.pt.from_everything
 
-    sm.ExtendedBase
-    sm.EngineCreator
-    sm.test_connection
-    sm.TimeoutError
+    _ = sm.ExtendedBase
+    _ = sm.EngineCreator
+    _ = sm.test_connection
+    _ = sm.TimeoutError
 
 
 if __name__ == "__main__":

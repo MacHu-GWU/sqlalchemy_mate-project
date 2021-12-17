@@ -6,8 +6,7 @@ import typing
 from sqlalchemy import String, Integer
 from sqlalchemy import create_engine, MetaData, Table, Column
 from sqlalchemy.engine import Engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm.session import sessionmaker, Session
+from sqlalchemy.orm import declarative_base, Session
 
 from ..engine_creator import EngineCreator
 from ..orm.extended_declarative_base import ExtendedBase
@@ -57,7 +56,6 @@ t_graph = Table(
     Column("value", Integer),
 )
 
-
 # --- Orm
 Base = declarative_base()
 
@@ -103,51 +101,97 @@ class PostTagAssociation(Base, ExtendedBase):
     description = Column(String)
 
 
-class BaseClassForTest:
-    engine = None  # type: Engine
-    session = None  # type: Session
-    declarative_base_class = None  # type: typing.Type[Base]
-    session_class = None  # type: typing.Type[Session]
+class BaseTest:
+    engine: Engine = None
+
+    @property
+    def eng(self) -> Engine:
+        """
+        shortcut for ``self.engine``
+        """
+        return self.engine
+
+    @classmethod
+    def setup_class(cls):
+        """
+        It is called one once before all test method start.
+
+        Don't overwrite this method in Child Class!
+        Use :meth:`BaseTest.class_level_data_setup` please
+        """
+        if cls.engine is not None:
+            metadata.create_all(cls.engine)
+            Base.metadata.create_all(cls.engine)
+        cls.class_level_data_setup()
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        It is called one once when all test method finished.
+
+        Don't overwrite this method in Child Class!
+        Use :meth:`BaseTest.class_level_data_teardown` please
+        """
+        cls.class_level_data_teardown()
+
+    def setup_method(self, method):
+        """
+        It is called before all test method invocation
+
+        Don't overwrite this method in Child Class!
+        Use :meth:`BaseTest.method_level_data_setup` please
+        """
+        self.method_level_data_setup()
+
+    def teardown_method(self, method):
+        """
+        It is called after all test method invocation.
+
+        Don't overwrite this method in Child Class!
+        Use :meth:`BaseTest.method_level_data_teardown` please
+        """
+        self.method_level_data_teardown()
 
     @classmethod
     def class_level_data_setup(cls):
+        """
+        Put data preparation task here.
+        """
+        pass
+
+    @classmethod
+    def class_level_data_teardown(cls):
+        """
+        Put data cleaning task here.
+        """
         pass
 
     def method_level_data_setup(self):
+        """
+        Put data preparation task here.
+        """
+        pass
+
+    def method_level_data_teardown(self):
+        """
+        Put data cleaning task here.
+        """
         pass
 
     @classmethod
-    def setup_class(cls):  # it is called before all test method invocation
-        if cls.engine is not None:
-            metadata.create_all(cls.engine)
-            if cls.declarative_base_class is not None:
-                cls.declarative_base_class.metadata.create_all(cls.engine)
-            cls.session_class = sessionmaker(bind=cls.engine)
-            cls.session = cls.session_class()
-            cls.class_level_data_setup()
+    def delete_all_data_in_core_table(cls):
+        with cls.engine.connect() as connection:
+            connection.execute(t_user.delete())
+            connection.execute(t_inv.delete())
+            connection.execute(t_cache.delete())
+            connection.execute(t_graph.delete())
+            connection.execute(t_smart_insert.delete())
 
     @classmethod
-    def teardown_class(cls):  # it is called after all test method invocation
-        if cls.session is not None:
-            cls.session.close()
-
-    def setup_method(self, method):  # it is called around each method invocation
-        if self.engine is not None:
-            self.method_level_data_setup()
-
-    @property
-    def eng(self):
-        return self.engine
-
-    @property
-    def ses(self):
-        return self.session
-
-
-class BaseClassForOrmTest(BaseClassForTest):
-    def setup_method(self, method):
-        self.eng.execute(User.__table__.delete())
-        self.eng.execute(Association.__table__.delete())
-        self.eng.execute(Order.__table__.delete())
-        self.eng.execute(BankAccount.__table__.delete())
-        self.eng.execute(PostTagAssociation.__table__.delete())
+    def delete_all_data_in_orm_table(cls):
+        with cls.engine.connect() as connection:
+            connection.execute(User.__table__.delete())
+            connection.execute(Association.__table__.delete())
+            connection.execute(Order.__table__.delete())
+            connection.execute(BankAccount.__table__.delete())
+            connection.execute(PostTagAssociation.__table__.delete())
