@@ -68,4 +68,3 @@ For more tools for select, insert, update, prettytable, io, please take a look a
 - :mod:`~sqlalchemy_mate.io`
 - :mod:`~sqlalchemy_mate.pt`
 - :mod:`~sqlalchemy_mate.engine_creator`
-

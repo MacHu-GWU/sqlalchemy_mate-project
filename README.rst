@@ -53,6 +53,10 @@ Welcome to ``sqlalchemy_mate`` Documentation
 
 A library extend sqlalchemy module, save you from writing 50% database.
 
+Note:
+
+
+
 
 Features
 ------------------------------------------------------------------------------
@@ -267,13 +271,13 @@ Automatically update value by primary key.
 .. code-block:: python
 
     # in SQL expression
-    #
     from sqlalchemy_mate import updating
+
     data = [{"id": 1, "name": "Alice}, {"id": 2, "name": "Bob"}, ...]
     updating.update_all(engine, table, data)
     updating.upsert_all(engine, table, data)
+
     # in ORM
-    #
     data = [User(id=1, name="Alice"), User(id=2, name="Bob"), ...]
     User.update_all(engine_or_session, user_list)
     User.upsert_all(engine_or_session, user_list)

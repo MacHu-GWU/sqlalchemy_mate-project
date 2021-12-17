@@ -4,8 +4,8 @@ Release and Version History
 ===========================
 
 
-0.0.10 (TODO)
-~~~~~~~~~~~~~
+1.4.28.2 (TODO)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
 
 **Minor Improvements**
@@ -13,6 +13,14 @@ Release and Version History
 **Bugfixes**
 
 **Miscellaneous**
+
+
+1.4.28.1 (2021-12-17)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Features and Improvements**
+
+- fully migrate to ``sqlalchemy`` 1.4+ 2.0 styled API, dropped < 1.3 API support
+- maintain a big version number compatability with Sqlalchemy, won't be responsible to be compatible with different major version. For example, ``sqlalchemy_mate==1.4.x`` maintain compatibility to ``sqlalchemy>=1.4.0,<1.5.0``.
 
 
 0.0.11 (2020-12-05)

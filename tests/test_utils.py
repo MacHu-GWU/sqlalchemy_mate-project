@@ -22,19 +22,12 @@ def test_ensure_list():
 class UtilityTestBase(BaseTest):
     def test_timeout_good_case(self):
         utils.test_connection(self.engine, timeout=3)
-        # engine = EngineCreator(
-        #     host="stampy.db.elephantsql.com", port=5432,
-        #     database="diyvavwx", username="diyvavwx", password="wrongpassword"
-        # ).create_postgresql_psycopg2()
-        # with pytest.raises(Exception):
-        #     utils.test_connection(engine, timeout=10)
-        #
-        # engine = EngineCreator().create_sqlite()
-        # with pytest.raises(TimeoutError):
-        #     utils.test_connection(engine, timeout=0.000001)
-        # utils.test_connection(engine, timeout=3)
 
 
+@pytest.mark.skipif(
+    IS_WINDOWS,
+    reason="windows doesn't have such signal",
+)
 class TestUtilitySqlite(UtilityTestBase):
     engine = engine_sqlite
 
