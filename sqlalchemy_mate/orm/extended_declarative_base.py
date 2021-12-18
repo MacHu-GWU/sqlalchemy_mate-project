@@ -5,7 +5,7 @@ Extend the power of declarative base.
 """
 
 import math
-from typing import Union, List, Tuple, Dict, Any, OrderedDict as OrderedDict_
+from typing import Union, List, Tuple, Dict, Any
 from collections import OrderedDict
 from copy import deepcopy
 
@@ -193,7 +193,7 @@ class ExtendedBase(Base):
     def to_OrderedDict(
         self,
         include_null: bool = True,
-    ) -> OrderedDict_[str, Any]:
+    ) -> OrderedDict:
         """
         Convert to OrderedDict.
         """
