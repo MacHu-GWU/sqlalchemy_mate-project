@@ -5,7 +5,7 @@ import sqlalchemy as sa
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, Session
 from sqlalchemy_mate.types.compressed_json import CompressedJSONType
-from sqlalchemy_mate.tests import engine_sqlite, engine_psql
+from sqlalchemy_mate.tests import IS_WINDOWS, engine_sqlite, engine_psql
 
 Base = declarative_base()
 
@@ -53,7 +53,11 @@ class TestSqlite(CompressedJSONBaseTest):
             assert order.items == self.items
 
 
-class TestPsql(CompressedJSONBaseTest):
+@pytest.mark.skipif(
+    IS_WINDOWS,
+    reason="no psql service container for windows",
+)
+class TestPsql(CompressedJSONBaseTest):  # pragma: no cover
     engine = engine_psql
 
 
