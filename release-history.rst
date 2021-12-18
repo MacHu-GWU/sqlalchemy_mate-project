@@ -15,7 +15,7 @@ Release and Version History
 **Miscellaneous**
 
 
-1.4.28.2 (TODO)
+1.4.28.2 (2021-12-18)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
 
