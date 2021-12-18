@@ -20,6 +20,7 @@ Release and Version History
 **Features and Improvements**
 
 - add ``sqlalchemy_mate.types.CompressedJSONType`` column type.
+- add ``sqlalchemy_mate.selecting.by_pk`` function.
 
 
 1.4.28.1 (2021-12-17)

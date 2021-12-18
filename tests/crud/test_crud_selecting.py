@@ -43,6 +43,29 @@ class SelectingApiBaseTest(BaseTest):
     def test_count_row(self):
         assert selecting.count_row(self.engine, t_user) == 3
 
+    def test_by_pk(self):
+        row = selecting.by_pk(self.engine, t_user, 1)
+        assert row._fields == ("user_id", "name")
+        assert tuple(row) == (1, "Alice")
+        assert row._asdict() == {"user_id": 1, "name": "Alice"}
+
+        row = selecting.by_pk(self.engine, t_user, (1,))
+        assert row._asdict() == {"user_id": 1, "name": "Alice"}
+
+        assert selecting.by_pk(self.engine, t_user, 0) is None
+
+        row = selecting.by_pk(self.engine, t_inv, (1, 2))
+        assert row._asdict() == {"store_id": 1, "item_id": 2}
+
+        with pytest.raises(ValueError):
+            selecting.by_pk(self.engine, t_user, (1, 1))
+
+        with pytest.raises(ValueError):
+            selecting.by_pk(self.engine, t_inv, 12)
+
+        with pytest.raises(ValueError):
+            selecting.by_pk(self.engine, t_inv, (1, 2, 1, 2))
+
     def test_select_all(self):
         rows = selecting.select_all(self.engine, t_user).all()
         assert len(rows) == 3

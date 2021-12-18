@@ -4,9 +4,9 @@
 This module provide utility functions for select operation.
 """
 
-from typing import List, Iterable
-from sqlalchemy import select, func, Column, Table
-from sqlalchemy.engine import Engine, Result
+from typing import List, Union, Iterable
+from sqlalchemy import select, func, Column, Table, and_
+from sqlalchemy.engine import Engine, Result, Row
 from ..utils import ensure_exact_one_arg_is_not_none
 
 
@@ -28,9 +28,36 @@ def count_row(
 
     返回一个表中的行数。
     """
-    return engine.execute(
-        select([func.count()]).select_from(table)
-    ).fetchone()[0]
+    with engine.connect() as connection:
+        return connection.execute(
+            select([func.count()]).select_from(table)
+        ).fetchone()[0]
+
+
+def by_pk(
+    engine: Engine,
+    table: Table,
+    id_,
+) -> Union[Row, None]:
+    """
+    Return single row or None by primary key values.
+    """
+    with engine.connect() as connection:
+        if isinstance(id_, (tuple, list)):
+            if len(id_) != len(table.primary_key):
+                raise ValueError
+            where_args = list()
+            for column, value in zip(table.primary_key, id_):
+                where_args.append(column == value)
+            return connection.execute(
+                select(table).where(and_(*where_args))
+            ).fetchone()
+        else:
+            if len(table.primary_key) != 1:
+                raise ValueError
+            return connection.execute(
+                select(table).where(list(table.primary_key)[0] == id_)
+            ).fetchone()
 
 
 def select_all(
