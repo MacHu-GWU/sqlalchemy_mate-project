@@ -10,7 +10,7 @@ __github_username__ = "MacHu-GWU"
 
 
 try:
-    from . import engine_creator, io, pt
+    from . import engine_creator, io, pt, types
     from .utils import test_connection
     from .engine_creator import EngineCreator
     from .crud import selecting, inserting, updating, deleting

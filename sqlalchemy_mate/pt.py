@@ -13,9 +13,7 @@ ResultProxy, 而不是 ORM 对象的列表. 所以在 :func:`from_object`, :func
 最终返回 ResultProxy.
 """
 
-from typing import Union, Tuple, List, Any, Iterable
-import enum
-import sqlalchemy as sa
+from typing import Union, Tuple, List
 from sqlalchemy import select, Table
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
@@ -38,7 +36,7 @@ def get_keys_values(item) -> Tuple[Union[list, tuple], Union[list, tuple]]:
             values.append(getattr(item, column.name))
         return keys, values
     elif isinstance(item, Row):
-        return list(item.keys()), list(item)
+        return list(item._fields), list(item)
     else:  # pragma: no cover
         raise TypeError
 

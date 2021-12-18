@@ -4,7 +4,7 @@ Release and Version History
 ===========================
 
 
-1.4.28.2 (TODO)
+1.4.28.3 (TODO)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
 
@@ -13,6 +13,13 @@ Release and Version History
 **Bugfixes**
 
 **Miscellaneous**
+
+
+1.4.28.2 (TODO)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Features and Improvements**
+
+- add ``sqlalchemy_mate.types.CompressedJSONType`` column type.
 
 
 1.4.28.1 (2021-12-17)
