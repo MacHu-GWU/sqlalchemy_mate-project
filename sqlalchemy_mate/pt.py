@@ -14,7 +14,7 @@ ResultProxy, 而不是 ORM 对象的列表. 所以在 :func:`from_object`, :func
 """
 
 from typing import Union, Tuple, List
-from sqlalchemy import select, Table
+from sqlalchemy import select, Table, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -170,9 +170,9 @@ def from_dict_list(data: List[dict]) -> PrettyTable:
 
 def from_everything(
     everything: Union[
-        TextClause, Select, Table, List[dict]
+        TextClause, Select, Table, List[dict], DeclarativeMeta
     ],
-    engine_or_session: Union[Engine, Session],
+    engine_or_session: Union[Engine, Session] = None,
     limit: int = None,
     **kwargs
 ):
@@ -197,6 +197,9 @@ def from_everything(
     """
     if isinstance(everything, TextClause):
         return from_text_clause(everything, engine_or_session, **kwargs)
+
+    if isinstance(everything, str):
+        return from_text_clause(text(everything), engine_or_session, **kwargs)
 
     if isinstance(everything, Select):
         return from_stmt(everything, engine_or_session, **kwargs)

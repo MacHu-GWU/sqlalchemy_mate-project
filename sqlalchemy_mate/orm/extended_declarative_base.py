@@ -5,11 +5,11 @@ Extend the power of declarative base.
 """
 
 import math
-from typing import Union, List, Tuple, Any
+from typing import Union, List, Tuple, Dict, Any, OrderedDict as OrderedDict_
 from collections import OrderedDict
 from copy import deepcopy
 
-from sqlalchemy import inspect, func, text, select, update
+from sqlalchemy import inspect, func, text, select, update, Column
 from sqlalchemy.sql.expression import TextClause
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, Session, InstrumentedAttribute
@@ -56,8 +56,9 @@ class ExtendedBase(Base):
 
     _settings_major_attrs: list = None
 
-    _cache_pk_names = None
+    _cache_pk_names: tuple = None
 
+    # --- No DB interaction APIs ---
     @classmethod
     def pk_names(cls) -> Tuple[str]:
         """
@@ -69,7 +70,7 @@ class ExtendedBase(Base):
             ])
         return cls._cache_pk_names
 
-    _cache_pk_fields = None
+    _cache_pk_fields: tuple = None
 
     @classmethod
     def pk_fields(cls) -> Tuple[InstrumentedAttribute]:
@@ -100,7 +101,7 @@ class ExtendedBase(Base):
 
     # id_field_xxx() method are only valid if there's only one primary key
 
-    _id_field_name = None
+    _id_field_name: str = None
 
     @classmethod
     def id_field_name(cls) -> str:
@@ -137,7 +138,7 @@ class ExtendedBase(Base):
         """
         return getattr(self, self.id_field_name())
 
-    _cache_keys = None
+    _cache_keys: List[str] = None
 
     @classmethod
     def keys(cls) -> List[str]:
@@ -174,7 +175,7 @@ class ExtendedBase(Base):
     def __str__(self):
         return self.__repr__()
 
-    def to_dict(self, include_null=True) -> dict:
+    def to_dict(self, include_null=True) -> Dict[str, Any]:
         """
         Convert to dict.
 
@@ -189,7 +190,10 @@ class ExtendedBase(Base):
                 if not attr.startswith("_sa_")
             }
 
-    def to_OrderedDict(self, include_null: bool = True) -> OrderedDict:
+    def to_OrderedDict(
+        self,
+        include_null: bool = True,
+    ) -> OrderedDict_[str, Any]:
         """
         Convert to OrderedDict.
         """
@@ -203,6 +207,24 @@ class ExtendedBase(Base):
                 except KeyError:
                     pass
             return OrderedDict(items)
+
+    _cache_major_attrs: tuple = None
+
+    @classmethod
+    def _major_attrs(cls):
+        if cls._cache_major_attrs is None:
+            l = list()
+            for item in cls._settings_major_attrs:
+                if isinstance(item, Column):
+                    l.append(item.name)
+                elif isinstance(item, str):
+                    l.append(item)
+                else:  # pragma: no cover
+                    raise TypeError
+            if len(set(l)) != len(l):  # pragma: no cover
+                raise ValueError
+            cls._cache_major_attrs = tuple(l)
+        return cls._cache_major_attrs
 
     def glance(self, _verbose: bool = True):  # pragma: no cover
         """
@@ -218,7 +240,7 @@ class ExtendedBase(Base):
 
         kwargs = [
             (attr, getattr(self, attr))
-            for attr in self._settings_major_attrs
+            for attr in self._major_attrs()
         ]
 
         text = "{classname}({kwargs})".format(
@@ -283,11 +305,12 @@ class ExtendedBase(Base):
 
         return self
 
+    # --- DB interaction APIs ---
     @classmethod
     def by_pk(
         cls,
-        id_: Union[Any, List[Any], Tuple],
         engine_or_session: Union[Engine, Session],
+        id_: Union[Any, List[Any], Tuple],
     ):
         """
         Get one object by primary_key values.
@@ -324,8 +347,8 @@ class ExtendedBase(Base):
     @classmethod
     def by_sql(
         cls,
-        sql: Union[str, TextClause],
         engine_or_session: Union[Engine, Session],
+        sql: Union[str, TextClause],
     ) -> List['ExtendedBase']:
         """
         Query with sql statement or texture sql.
@@ -539,6 +562,21 @@ class ExtendedBase(Base):
             include_null=include_null,
             upsert=True,
         )
+
+    @classmethod
+    def delete_all(
+        cls,
+        engine_or_session: Union[Engine, Session],
+    ):  # pragma: no cover
+        """
+        Delete all data in this table.
+
+        TODO: add a boolean flag for cascade remove
+        """
+        ses, auto_close = ensure_session(engine_or_session)
+        ses.execute(cls.__table__.delete())
+        ses.commit()
+        clean_session(ses, auto_close)
 
     @classmethod
     def count_all(

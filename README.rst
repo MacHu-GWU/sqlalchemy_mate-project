@@ -51,27 +51,25 @@
 Welcome to ``sqlalchemy_mate`` Documentation
 ==============================================================================
 
-A library extend sqlalchemy module, save you from writing 50% database.
-
-Note:
-
-
+A sweet syntax sugar library simplify your in writing ``sqlalchemy`` code.
 
 
 Features
 ------------------------------------------------------------------------------
 
 .. contents::
-    :local:
+    :class: this-will-duplicate-information-and-it-is-still-useful-here
     :depth: 1
+    :local:
 
 
 Read Database Credential Safely
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. contents::
-    :local:
+    :class: this-will-duplicate-information-and-it-is-still-useful-here
     :depth: 1
+    :local:
 
 Put your database connection credential in your source code is always a **BAD IDEA**.
 

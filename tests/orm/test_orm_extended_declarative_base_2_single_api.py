@@ -27,27 +27,27 @@ class SingleOperationBaseTest(BaseTest):
             ses.add(User(id=1, name="alice"))
             ses.commit()
 
-        assert User.by_pk(1, self.eng).name == "alice"
-        assert User.by_pk((1,), self.eng).name == "alice"
-        assert User.by_pk([1, ], self.eng).name == "alice"
-        assert User.by_pk(0, self.eng) is None
+        assert User.by_pk(self.eng, 1).name == "alice"
+        assert User.by_pk(self.eng, (1,)).name == "alice"
+        assert User.by_pk(self.eng, [1, ]).name == "alice"
+        assert User.by_pk(self.eng, 0) is None
         with Session(self.eng) as ses:
-            assert User.by_pk(1, ses).name == "alice"
-            assert User.by_pk((1,), ses).name == "alice"
-            assert User.by_pk([1, ], ses).name == "alice"
-            assert User.by_pk(0, ses) is None
+            assert User.by_pk(ses, 1).name == "alice"
+            assert User.by_pk(ses, (1,)).name == "alice"
+            assert User.by_pk(ses, [1, ]).name == "alice"
+            assert User.by_pk(ses, 0) is None
 
         with Session(self.eng) as ses:
             ses.add(Association(x_id=1, y_id=2, flag=999))
             ses.commit()
 
-        assert Association.by_pk((1, 2), self.eng).flag == 999
-        assert Association.by_pk([1, 2], self.eng).flag == 999
-        assert Association.by_pk((0, 0), self.eng) is None
+        assert Association.by_pk(self.eng, (1, 2)).flag == 999
+        assert Association.by_pk(self.eng, [1, 2]).flag == 999
+        assert Association.by_pk(self.eng, (0, 0)) is None
         with Session(self.eng) as ses:
-            assert Association.by_pk((1, 2), ses).flag == 999
-            assert Association.by_pk([1, 2], ses).flag == 999
-            assert Association.by_pk([0, 0], ses) is None
+            assert Association.by_pk(ses, (1, 2)).flag == 999
+            assert Association.by_pk(ses, [1, 2]).flag == 999
+            assert Association.by_pk(ses, [0, 0]) is None
 
     def test_by_sql(self):
         assert User.count_all(self.eng) == 0
@@ -64,22 +64,22 @@ class SingleOperationBaseTest(BaseTest):
         expected = ["mr y", "mr z"]
 
         results = User.by_sql(
+            self.eng,
             """
             SELECT * 
             FROM extended_declarative_base_user t
             WHERE t.id >= 2
             """,
-            self.eng,
         )
         assert [user.name for user in results] == expected
 
         results = User.by_sql(
+            self.eng,
             sa.text("""
             SELECT * 
             FROM extended_declarative_base_user t
             WHERE t.id >= 2
             """),
-            self.eng,
         )
         assert [user.name for user in results] == expected
 

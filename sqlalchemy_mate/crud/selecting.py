@@ -171,6 +171,18 @@ def select_random(
 ) -> Result:
     """
     Randomly select some rows from table.
+
+    :param perc: int from 1 ~ 99. (means 1% ~ 99%)
+
+    Example::
+
+        # randomly select 100 users
+        for row in sam.selecting.select_random(engine, t_users, limit=100):
+            ...
+
+        # randomly select 5% rows from users table
+        for row in sam.selecting.select_random(engine, t_users, perc=5):
+            ...
     """
     ensure_exact_one_arg_is_not_none(limit, perc)
     ensure_exact_one_arg_is_not_none(table, columns)

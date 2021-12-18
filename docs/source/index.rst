@@ -1,5 +1,8 @@
+
 .. contents::
+    :class: this-will-duplicate-information-and-it-is-still-useful-here
     :depth: 2
+    :local:
 
 Release v\ |release| (:ref:`What's new? <release_history>`).
 

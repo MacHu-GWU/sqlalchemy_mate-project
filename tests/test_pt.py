@@ -77,7 +77,6 @@ class PrettyTableTestBase(BaseTest):
             ptable = pt.from_result(res)
             assert len(ptable._rows) == 4
 
-    #
     def test_from_text_clause(self):
         stmt = text(f"SELECT * FROM {t_user.name} LIMIT 2")
         tb = pt.from_text_clause(stmt, self.eng)
@@ -160,6 +159,7 @@ class PrettyTableTestBase(BaseTest):
             orm_class,
             result,
             data,
+            f"SELECT user_id FROM {t_user.name} WHERE name = 'Bob'",
         ]
         for thing in everything:
             tb = pt.from_everything(thing, self.engine, limit=10)

@@ -8,13 +8,10 @@ import os
 import json
 import string
 import sqlalchemy as sa
-try:
-    from sqlalchemy.engine import Engine
-except ImportError:  # pragma: no cover
-    pass
+from sqlalchemy.engine import Engine
 
 
-class EngineCreator(object): # pragma: no cover
+class EngineCreator:  # pragma: no cover
     """
     Tired of looking up docs on https://docs.sqlalchemy.org/en/latest/core/engines.html?
 
@@ -27,16 +24,29 @@ class EngineCreator(object): # pragma: no cover
         # sqlite in memory
         engine = EngineCreator.create_sqlite()
 
-        # postgresql
+        # connect to postgresql, credential stored at ``~/.db.json``
+        # content of ``.db.json``
+        {
+            "mydb": {
+                "host": "example.com",
+                "port": 1234,
+                "database": "test",
+                "username": "admin",
+                "password": "admin"
+            },
+            ...
+        }
         engine = EngineCreator.from_home_db_json("mydb").create_postgresql()
     """
 
-    def __init__(self,
-                 host=None,
-                 port=None,
-                 database=None,
-                 username=None,
-                 password=None):
+    def __init__(
+        self,
+        host=None,
+        port=None,
+        database=None,
+        username=None,
+        password=None,
+    ):
         self.host = host
         self.port = port
         self.database = database
@@ -55,7 +65,7 @@ class EngineCreator(object): # pragma: no cover
         )
 
     @property
-    def uri(self):
+    def uri(self) -> str:
         """
         Return sqlalchemy connect string URI.
         """
@@ -95,7 +105,12 @@ class EngineCreator(object): # pragma: no cover
         return cls(**cls._transform(data, key_mapping))
 
     @classmethod
-    def from_json(cls, json_file, json_path=None, key_mapping=None):
+    def from_json(
+        cls,
+        json_file: str,
+        json_path: str = None,
+        key_mapping: dict = None,
+    ) -> 'EngineCreator':
         """
         Load connection credential from json file.
 
@@ -139,7 +154,11 @@ class EngineCreator(object): # pragma: no cover
             return cls._from_json_data(data, json_path, key_mapping)
 
     @classmethod
-    def from_home_db_json(cls, identifier, key_mapping=None):  # pragma: no cover
+    def from_home_db_json(
+        cls,
+        identifier: str,
+        key_mapping: dict = None,
+    ) -> 'EngineCreator':  # pragma: no cover
         """
         Read credential from $HOME/.db.json file.
 
@@ -168,12 +187,17 @@ class EngineCreator(object): # pragma: no cover
             json_file=cls.path_db_json, json_path=identifier, key_mapping=key_mapping)
 
     @classmethod
-    def from_s3_json(cls, bucket_name, key,
-                     json_path=None, key_mapping=None,
-                     aws_profile=None,
-                     aws_access_key_id=None,
-                     aws_secret_access_key=None,
-                     region_name=None):  # pragma: no cover
+    def from_s3_json(
+        cls,
+        bucket_name: str,
+        key: str,
+        json_path: str = None,
+        key_mapping: dict = None,
+        aws_profile: str = None,
+        aws_access_key_id: str = None,
+        aws_secret_access_key: str = None,
+        region_name: str = None,
+    ) -> 'EngineCreator':  # pragma: no cover
         """
         Load database credential from json on s3.
 
@@ -200,7 +224,12 @@ class EngineCreator(object): # pragma: no cover
         return cls._from_json_data(data, json_path, key_mapping)
 
     @classmethod
-    def from_env(cls, prefix, kms_decrypt=False, aws_profile=None):
+    def from_env(
+        cls,
+        prefix: str,
+        kms_decrypt: bool = False,
+        aws_profile: str = None,
+    ) -> 'EngineCreator':
         """
         Load database credential from env variable.
 
@@ -264,13 +293,13 @@ class EngineCreator(object): # pragma: no cover
             password=self.password,
         )
 
-    #--- engine creator logic
-    def create_connect_str(self, dialect_and_driver):
+    # --- engine creator logic
+    def create_connect_str(self, dialect_and_driver) -> str:
         return "{}://{}".format(dialect_and_driver, self.uri)
 
     _ccs = create_connect_str
 
-    def create_engine(self, conn_str, **kwargs):
+    def create_engine(self, conn_str, **kwargs) -> Engine:
         """
         :rtype: Engine
         """
@@ -281,11 +310,14 @@ class EngineCreator(object): # pragma: no cover
     @classmethod
     def create_sqlite(cls, path=":memory:", **kwargs):
         """
-        :rtype: Engine
+        Create sqlite engine.
         """
         return sa.create_engine("sqlite:///{path}".format(path=path), **kwargs)
 
     class DialectAndDriver(object):
+        """
+        DB dialect and DB driver mapping.
+        """
         psql = "postgresql"
         psql_psycopg2 = "postgresql+psycopg2"
         psql_pg8000 = "postgresql+pg8000"
