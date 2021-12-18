@@ -20,7 +20,7 @@ def update_all(
     upsert=False,
 ) -> Tuple[int, int]:
     """
-    Update data by its primary_key column.
+    Update data by its primary_key column values. By default upsert is False.
     """
     with engine.connect() as connection:
         update_counter = 0

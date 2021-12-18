@@ -17,12 +17,14 @@ def count_row(
     """
     Return number of rows in a table.
 
-    Example:
+    Example::
 
-        >>> import sqlalchemy as sa
-        >>> t_user = sa.Table()
-        >>> count_row(engine, t_user)
-        3
+        import sqlalchemy as sa
+        import sqlalchemy_mate as sam
+
+        t_users = sa.Table(...)
+        engine = sa.create_engine(...)
+        sam.selecting.count_row(engine, t_user)
 
     **中文文档**
 
@@ -41,6 +43,25 @@ def by_pk(
 ) -> Union[Row, None]:
     """
     Return single row or None by primary key values.
+
+    :param id_: single value if table has only one primary key, tuple / list of
+        values if table has multiple primary keys, positioning is sensitive.
+
+    Example::
+
+        import sqlalchemy as sa
+        import sqlalchemy_mate as sam
+
+        t_users = sa.Table
+            "users", metadata,
+            Column("id", sa.Integer, primary_key=True),
+            ...
+        )
+        engine = sa.create_engine(...)
+        row = sam.selecting.by_pk(engine, t_user, 1) # one row or None
+        print(row._fields)      # keys
+        print(tuple(row))       # values
+        print(row._asdict())    # dict view
     """
     with engine.connect() as connection:
         if isinstance(id_, (tuple, list)):
@@ -65,7 +86,12 @@ def select_all(
     table: Table,
 ) -> Result:
     """
-    Select everything from a table.
+    Select all rows from a table.
+
+    Example::
+
+        for row in sam.selecting.select_all(engine, t_users):
+            ...
     """
     s = select([table])
     with engine.connect() as connection:
@@ -78,6 +104,10 @@ def select_single_column(
 ) -> list:
     """
     Select data from single column.
+
+    Example::
+
+        id_list = sam.selecting.select_all(engine, t_users.c.id)
     """
     s = select([column])
     with engine.connect() as connection:
@@ -90,6 +120,10 @@ def select_many_column(
 ) -> List[tuple]:
     """
     Select data from multiple columns.
+
+    Example::
+
+        dataframe = sam.selecting.select_all(engine, [t_users.c.id, t_users.c.name])
     """
     s = select(columns)
     with engine.connect() as connection:
@@ -102,6 +136,10 @@ def select_single_distinct(
 ) -> list:
     """
     Select distinct data from single column.
+
+    Example::
+
+        unique_name_list = sam.selecting.select_all(engine, t_users.c.name)
     """
     s = select([column]).distinct()
     with engine.connect() as connection:
@@ -114,6 +152,10 @@ def select_many_distinct(
 ) -> List[tuple]:
     """
     Select distinct data from multiple columns.
+
+    Example::
+
+        dataframe = sam.selecting.select_many_distinct(engine, [t_users.c.id, t_users.c.name])
     """
     s = select(columns).distinct()
     with engine.connect() as connection:
@@ -174,10 +216,16 @@ def select_random(
 
 
 def yield_tuple(result: Result) -> Iterable[tuple]:
+    """
+    Yield rows in tuple values view.
+    """
     for row in result:
         yield tuple(row)
 
 
 def yield_dict(result: Result) -> Iterable[dict]:
+    """
+    Yield rows in dict view.
+    """
     for row in result:
         yield dict(row)

@@ -90,7 +90,7 @@ class ExtendedBase(Base):
             ])
         return cls._cache_pk_fields
 
-    def pk_values(self):
+    def pk_values(self) -> tuple:
         """
         Primary key values
 
@@ -140,7 +140,7 @@ class ExtendedBase(Base):
     _cache_keys = None
 
     @classmethod
-    def keys(cls):
+    def keys(cls) -> List[str]:
         """
         return list of all declared columns.
 
@@ -150,13 +150,13 @@ class ExtendedBase(Base):
             cls._cache_keys = [c.name for c in cls.__table__.columns]
         return cls._cache_keys
 
-    def values(self):
+    def values(self) -> list:
         """
         return list of value of all declared columns.
         """
         return [getattr(self, c.name, None) for c in self.__table__.columns]
 
-    def items(self):
+    def items(self) -> List[Tuple[str, Any]]:
         """
         return list of pair of name and value of all declared columns.
         """
@@ -174,7 +174,7 @@ class ExtendedBase(Base):
     def __str__(self):
         return self.__repr__()
 
-    def to_dict(self, include_null=True):
+    def to_dict(self, include_null=True) -> dict:
         """
         Convert to dict.
 
@@ -189,11 +189,9 @@ class ExtendedBase(Base):
                 if not attr.startswith("_sa_")
             }
 
-    def to_OrderedDict(self, include_null=True):
+    def to_OrderedDict(self, include_null: bool = True) -> OrderedDict:
         """
         Convert to OrderedDict.
-
-        :rtype: OrderedDict
         """
         if include_null:
             return OrderedDict(self.items())
@@ -206,7 +204,7 @@ class ExtendedBase(Base):
                     pass
             return OrderedDict(items)
 
-    def glance(self, _verbose=True):  # pragma: no cover
+    def glance(self, _verbose: bool = True):  # pragma: no cover
         """
         Print itself, only display attributes defined in
         :attr:`ExtendedBase._settings_major_attrs`
@@ -241,9 +239,6 @@ class ExtendedBase(Base):
     ) -> 'ExtendedBase':
         """
         For attributes of others that value is not None, assign it to self.
-
-        :type data: ExtendedBase
-        :type ignore_none: bool
 
         **中文文档**
 
