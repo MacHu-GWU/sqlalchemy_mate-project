@@ -150,7 +150,7 @@ class BulkOperationTestBase(BaseTest):
         # multiple primary key columns
         # ------ Before State ------
         Association.smart_insert(self.eng, Association(x_id=1, y_id=1, flag=0))
-        assert Association.by_pk((1, 1), self.eng).flag == 0
+        assert Association.by_pk(self.eng, (1, 1)).flag == 0
 
         # ------ Invoke ------
         # update
