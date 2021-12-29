@@ -392,8 +392,8 @@ class ExtendedBase(Base):
             sql_stmt = text(sql)
         elif isinstance(sql, TextClause):
             sql_stmt = sql
-        else:
-            raise
+        else:  # pragma: no cover
+            raise TypeError
         ses, auto_close = ensure_session(engine_or_session)
         results = ses.scalars(select(cls).from_statement(sql_stmt)).all()
         clean_session(ses, auto_close)
@@ -611,7 +611,6 @@ class ExtendedBase(Base):
         results = ses.scalars(select(cls)).all()
         clean_session(ses, auto_close)
         return results
-
 
     @classmethod
     def random_sample(

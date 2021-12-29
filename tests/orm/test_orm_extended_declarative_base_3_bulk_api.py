@@ -191,6 +191,21 @@ class BulkOperationTestBase(BaseTest):
             assert ses.get(Association, (1, 1)).flag == 999
             assert ses.get(Association, (1, 2)).flag == 2
 
+    def test_select_all(self):
+        with Session(self.eng) as ses:
+            ses.add_all([
+                User(id=1), User(id=2), User(id=3),
+            ])
+            ses.commit()
+
+            user_list = User.select_all(self.eng)
+            assert len(user_list) == 3
+            assert isinstance(user_list[0], User)
+
+            user_list = User.select_all(ses)
+            assert len(user_list) == 3
+            assert isinstance(user_list[0], User)
+
     def test_random_sample(self):
         n_order = 1000
         Order.smart_insert(self.eng, [Order(id=id) for id in range(1, n_order + 1)])

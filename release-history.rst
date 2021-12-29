@@ -4,7 +4,7 @@ Release and Version History
 ===========================
 
 
-1.4.28.3 (TODO)
+1.4.28.4 (TODO)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
 
@@ -13,6 +13,20 @@ Release and Version History
 **Bugfixes**
 
 **Miscellaneous**
+
+
+1.4.28.3 (2021-12-29)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Features and Improvements**
+
+- add ``sqlalchemy_mate.types.JSONSerializableType``
+- add ``sqlalchemy_mate.types.CompressedStringType``
+- add ``sqlalchemy_mate.types.CompressedBinaryType``
+- add ``sqlalchemy_mate.ExtendedBase.select_all`` method
+
+**Bugfixes**
+
+- Fix the underlying implementation type for ``sqlalchemy_mate.types.CompressedJSONType``
 
 
 1.4.28.2 (2021-12-18)
