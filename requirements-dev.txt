@@ -2,6 +2,8 @@ pathlib_mate    # autopep8 your code
 wheel           # python wheel
 twine           # make distribution archive
 
-psycopg2-binary
+pg8000
+attrs
+superjson
 pandas
 boto3

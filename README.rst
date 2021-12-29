@@ -117,7 +117,7 @@ code:
         json_file="path-to-json-file",
         json_path="credentials.db1", # dot notation json path
     )
-    engine = ec.create_postgresql_psycopg2()
+    engine = ec.create_postgresql_pg8000()
 
 **Default data fields** are ``host``, ``port``, ``database``, ``username``, ``password``.
 

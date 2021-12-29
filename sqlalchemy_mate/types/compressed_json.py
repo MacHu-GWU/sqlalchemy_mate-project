@@ -1,82 +1,82 @@
 # -*- coding: utf-8 -*-
 
-import six
 import zlib
 import json
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql.base import ischema_names
-
-try:
-    from sqlalchemy.dialects.postgresql import JSON
-
-    has_postgres_json = True
-except ImportError:
-    class PostgresJSONType(sa.types.UserDefinedType):
-        """
-        Text search vector type for postgresql.
-        """
-
-        def get_col_spec(self):
-            return 'json'
-
-
-    ischema_names['json'] = PostgresJSONType
-    has_postgres_json = False
 
 
 class CompressedJSONType(sa.types.TypeDecorator):
     """
-    JSONType offers way of saving JSON data structures to database. On
-    PostgreSQL the underlying implementation of this data type is 'json' while
-    on other databases its simply 'text'.
+    This column store json serialized object and automatically compress it
+    in form of binary before writing to the database.
 
-    ::
+    This column should be a json serializable python type such as combination of
+    list, dict, string, int, float, bool. Also you can use other standard
+    json api compatible library for better serialization / deserialization
+    support.
 
-        from sqlalchemy_utils import JSONType
+    **NOTE**, this type doesn't support JSON path query, it treats the object
+    as a whole and compress it to save storage only.
 
+    :param json_lib: optional, the json library you want to use. It should have
+        ``json.dumps`` method takes object as first arg, and returns a json
+        string. Should also have ``json.loads`` method takes string as
+        first arg, returns the original object.
 
-        class Product(Base):
-            __tablename__ = 'product'
-            id = sa.Column(sa.Integer, autoincrement=True)
-            name = sa.Column(sa.Unicode(50))
-            details = sa.Column(JSONType)
+    .. code-block:: python
 
+        # standard json api compatible json library
+        import jsonpickle
 
-        product = Product()
-        product.details = {
-            'color': 'red',
-            'type': 'car',
-            'max-speed': '400 mph'
-        }
-        session.commit()
+        class Order(Base):
+            ...
+
+            id = Column(Integer, primary_key=True)
+            items = CompressedJSONType(json_lib=jsonpickle)
+
+        items = [
+            {"item_name": "apple", "quantity": 12},
+            {"item_name": "banana", "quantity": 6},
+            {"item_name": "cherry", "quantity": 3},
+        ]
+
+        order = Order(id=1, items=items)
+        with Session(engine) as ses:
+            ses.add(order)
+            ses.save()
+
+            order = ses.get(Order, 1)
+            assert order.items == items
+
+            # WHERE ... = ... also works
+            stmt = select(Order).where(Order.items==items)
+            order = ses.scalars(stmt).one()
     """
     impl = sa.LargeBinary
     cache_ok = True
 
+    _JSON_LIB = "json_lib"
+
     def __init__(self, *args, **kwargs):
+        if self._JSON_LIB in kwargs:
+            self.json_lib = kwargs.pop(self._JSON_LIB)
+        else:
+            self.json_lib = json
         super(CompressedJSONType, self).__init__(*args, **kwargs)
 
     def load_dialect_impl(self, dialect):
-        if dialect.name == 'postgresql':
-            # Use the native JSON type.
-            if has_postgres_json:
-                return dialect.type_descriptor(JSON())
-            else:
-                return dialect.type_descriptor(PostgresJSONType())
-        else:
-            return dialect.type_descriptor(self.impl)
+        return dialect.type_descriptor(self.impl)
 
     def process_bind_param(self, value, dialect):
-        if dialect.name == 'postgresql' and has_postgres_json:
+        if value is None:
             return value
-        if value is not None:
-            value = six.binary_type(zlib.compress(
-                json.dumps(value).encode("utf-8")))
-        return value
+        return zlib.compress(
+            self.json_lib.dumps(value).encode("utf-8")
+        )
 
     def process_result_value(self, value, dialect):
-        if dialect.name == 'postgresql':
-            return value
-        if value is not None:
-            value = json.loads(zlib.decompress(value).decode("utf-8"))
-        return value
+        if value is None:
+            return None
+        return self.json_lib.loads(
+            zlib.decompress(value).decode("utf-8")
+        )

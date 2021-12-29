@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import pytest
+import sys
+import json
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, Session
 from sqlalchemy_mate.types.compressed_json import CompressedJSONType
 from sqlalchemy_mate.tests import IS_WINDOWS, engine_sqlite, engine_psql
+
+import pytest
 
 Base = declarative_base()
 
@@ -30,27 +33,53 @@ class CompressedJSONBaseTest:
 
     @classmethod
     def setup_class(cls):
-        if cls.engine is not None:
-            Base.metadata.create_all(cls.engine)
+        if cls.engine is None:
+            return
+
+        Base.metadata.drop_all(cls.engine)
+        Base.metadata.create_all(cls.engine)
+
+        with cls.engine.connect() as conn:
+            conn.execute(Order.__table__.delete())
+
+        with Session(cls.engine) as ses:
             order = Order(id=cls.id_, items=cls.items)
-            with Session(cls.engine) as ses:
-                if ses.get(Order, 1) is None:
-                    ses.add(order)
-                    ses.commit()
+            ses.add(order)
+            ses.commit()
 
     def test_read_and_write(self):
         with Session(self.engine) as ses:
             order = ses.get(Order, self.id_)
             assert order.items == self.items
 
+            order = Order(id=2)
+            ses.add(order)
+            ses.commit()
 
-class TestSqlite(CompressedJSONBaseTest):
-    engine = engine_sqlite
+            order = ses.get(Order, 2)
+            assert order.items == None
+
+    def test_underlying_data_is_compressed(self):
+        metadata = sa.MetaData()
+        t_user = sa.Table(
+            "types_compressed_json_orders", metadata,
+            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("items", sa.LargeBinary),
+        )
+        with self.engine.connect() as conn:
+            stmt = sa.select(t_user).where(t_user.c.id == self.id_)
+            order = conn.execute(stmt).one()
+            assert isinstance(order[1], bytes)
+            assert sys.getsizeof(order[1]) <= sys.getsizeof(json.dumps(self.items))
 
     def test_select_where(self):
         with Session(self.engine) as ses:
             order = ses.scalars(sa.select(Order).where(Order.items == self.items)).one()
             assert order.items == self.items
+
+
+class TestSqlite(CompressedJSONBaseTest):
+    engine = engine_sqlite
 
 
 @pytest.mark.skipif(
@@ -59,6 +88,11 @@ class TestSqlite(CompressedJSONBaseTest):
 )
 class TestPsql(CompressedJSONBaseTest):  # pragma: no cover
     engine = engine_psql
+
+    def test_select_where(self):
+        with Session(self.engine) as ses:
+            order = ses.scalars(sa.select(Order).where(Order.items == self.items)).one()
+            assert order.items == self.items
 
 
 if __name__ == "__main__":

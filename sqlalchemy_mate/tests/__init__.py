@@ -21,8 +21,8 @@ engine_psql = EngineCreator(
     password="password",
     database="postgres",
     host="localhost",
-    port=43347,
-).create_postgresql_psycopg2()
+    port=40311,
+).create_postgresql_pg8000()
 
 metadata = MetaData()
 

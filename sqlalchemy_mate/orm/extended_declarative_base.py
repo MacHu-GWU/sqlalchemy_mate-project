@@ -51,6 +51,14 @@ class ExtendedBase(Base):
     - :meth:`ExtendedBase.id_field_name`
     - :meth:`ExtendedBase.id_field`
     - :meth:`ExtendedBase.id_field_value`
+
+    所有参数包括 ``engine_or_session`` 的函数需返回
+
+    - 所有的 insert / update
+    - 所有的 select 相关的 method 返回的不是 ResultProxy, 因为有 engine_or_session
+        这个参数如果输入是 engine, 用于执行的 session 都是临时对象, 离开了这个 method,
+        session 将被摧毁. 而返回的 Result 是跟当前的 session 绑定相关的, session 一旦
+        被关闭, Result 理应不进行任何后续操作. 所以建议全部返回所有结果的列表而不是迭代器.
     """
     __abstract__ = True
 
@@ -583,10 +591,27 @@ class ExtendedBase(Base):
         cls,
         engine_or_session: Union[Engine, Session],
     ) -> int:
+        """
+        Return number of rows in this table.
+        """
         ses, auto_close = ensure_session(engine_or_session)
         count = ses.execute(select(func.count()).select_from(cls)).one()[0]
         clean_session(ses, auto_close)
         return count
+
+    @classmethod
+    def select_all(
+        cls,
+        engine_or_session: Union[Engine, Session],
+    ) -> List['ExtendedBase']:
+        """
+
+        """
+        ses, auto_close = ensure_session(engine_or_session)
+        results = ses.scalars(select(cls)).all()
+        clean_session(ses, auto_close)
+        return results
+
 
     @classmethod
     def random_sample(

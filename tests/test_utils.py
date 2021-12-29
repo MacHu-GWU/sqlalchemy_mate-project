@@ -48,7 +48,7 @@ class TestUtilityPostgres(UtilityTestBase):
         engine = EngineCreator(
             host="stampy.db.elephantsql.com", port=5432,
             database="diyvavwx", username="diyvavwx", password="wrongpassword"
-        ).create_postgresql_psycopg2()
+        ).create_postgresql_pg8000()
         with pytest.raises(Exception):
             utils.test_connection(engine, timeout=10)
 
