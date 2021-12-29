@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 
+"""
+Json serializable type.
+"""
 
+import typing
 try:
     from superjson import json
 except ImportError:  # pragma: no cover
@@ -16,6 +20,42 @@ class JSONSerializableType(sa.types.TypeDecorator):
 
     This column should be a json serializable python type such as combination of
     list, dict, string, int, float, bool.
+
+    Usage:
+
+        import jsonpickle
+
+        # a custom python class
+        class ComputerDetails:
+            def __init__(self, ...):
+                ...
+
+            def to_json(self) -> str:
+                return jsonpickle.encode(self)
+
+            @classmethod
+            def from_json(cls, json_str: str) -> 'Computer':
+                return cls(**jsonpickle.decode(json_str))
+
+        Base = declarative_base()
+
+        class Computer(Base):
+            id = Column(Integer, primary_key)
+            details = Column(JSONSerializableType(factory_class=Computer)
+
+            ...
+
+        computer = Computer(
+            id=1,
+            details=ComputerDetails(...),
+        )
+
+        with Session(engine) as session:
+            session.add(computer)
+            session.commit()
+
+            computer = session.get(Computer, 1)
+            print(computer.details)
     """
     impl = sa.UnicodeText
     cache_ok = True
@@ -37,13 +77,13 @@ class JSONSerializableType(sa.types.TypeDecorator):
     def load_dialect_impl(self, dialect):
         return self.impl
 
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value, dialect) -> typing.Union[str, None]:
         if value is None:
             return value
         else:
             return value.to_json()
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value: typing.Union[str, None], dialect):
         if value is None:
             return value
         else:

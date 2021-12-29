@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+"""
+This module provide some custom data types that automatically compress before
+writing to the database.
+"""
+
 import zlib
 import typing
 import sqlalchemy as sa
@@ -30,6 +35,9 @@ class BaseCompressedType(sa.types.TypeDecorator):
 
 
 class CompressedStringType(BaseCompressedType):
+    """
+    Compressed unicode string.
+    """
     impl = sa.LargeBinary
     cache_ok = True
 
@@ -45,6 +53,9 @@ class CompressedStringType(BaseCompressedType):
 
 
 class CompressedBinaryType(BaseCompressedType):
+    """
+    Compressed binary data.
+    """
     impl = sa.LargeBinary
     cache_ok = True
 

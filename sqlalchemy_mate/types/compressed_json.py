@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+"""
+Compressed json type.
+"""
+
 import zlib
 import json
 import sqlalchemy as sa
