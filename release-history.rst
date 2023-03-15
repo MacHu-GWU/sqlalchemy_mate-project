@@ -4,7 +4,7 @@ Release and Version History
 ===========================
 
 
-1.4.28.4 (TODO)
+Backlog (TODO)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
 
@@ -13,6 +13,13 @@ Release and Version History
 **Bugfixes**
 
 **Miscellaneous**
+
+
+1.4.28.4 (2023-03-15)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Bugfixes**
+
+- fix a syntax bug in ``requirements.txt``
 
 
 1.4.28.3 (2021-12-29)
