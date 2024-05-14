@@ -19,7 +19,7 @@ jobs:
       # Label used to access the service container
       postgres:
         # Docker Hub image
-        image: postgres:10.6-alpine # docker run --rm --name test-psql-db -p 43347:5432 -e POSTGRES_PASSWORD=password -d postgres:10.6-alpine
+        image: postgres:15.7-alpine # docker run --rm --name test-psql-db -p 43347:5432 -e POSTGRES_PASSWORD=password -d postgres:10.6-alpine
         # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: password
@@ -33,12 +33,12 @@ jobs:
           # Maps tcp port 5432 on service container to the host 43347
           - 40311:5432
     env: # define environment variables
-      USING_COVERAGE: "3.7,3.8,3.9,3.10"
+      USING_COVERAGE: "3.8,3.9,3.10,3.11"
     strategy:
       matrix:
         os: ["ubuntu-latest"]
 #        os: ["ubuntu-latest"] # for temp testing only
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 #        python-version: ["3.6"] # for temp testing only
     steps:
       - uses: "actions/checkout@v2" # https://github.com/marketplace/actions/checkout
@@ -68,12 +68,12 @@ jobs:
     name: "${{ matrix.os }} Python ${{ matrix.python-version }}"
     runs-on: "${{ matrix.os }}" # for all available VM runtime, see this: https://docs.github.com/en/free-pro-team@latest/actions/reference/specifications-for-github-hosted-runners
     env: # define environment variables
-      USING_COVERAGE: "3.6,3.7,3.8,3.9"
+      USING_COVERAGE: "3.8,3.9,3.10,3.11"
     strategy:
       matrix:
         os: ["windows-latest"]
 #        os: ["ubuntu-latest"] # for temp testing only
-        python-version: ["3.6", "3.7", "3.8", "3.9"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 #        python-version: ["3.6"] # for temp testing only
         exclude:
           - os: windows-latest # this is a useless exclude rules for demonstration use only
@@ -99,4 +99,6 @@ jobs:
         if: "contains(env.USING_COVERAGE, matrix.python-version)"
         uses: "codecov/codecov-action@v3" # https://github.com/marketplace/actions/codecov-action
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: MacHu-GWU/sqlalchemy_mate-project
           fail_ci_if_error: true
