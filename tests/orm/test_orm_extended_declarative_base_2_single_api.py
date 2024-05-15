@@ -7,11 +7,15 @@ Testing for single object DB action.
 import pytest
 
 import sqlalchemy as sa
-from sqlalchemy.orm import Session
+import sqlalchemy.orm as orm
 from sqlalchemy_mate.tests import (
     IS_WINDOWS,
-    engine_sqlite, engine_psql, BaseTest,
-    User, Association, Order,
+    engine_sqlite,
+    engine_psql,
+    BaseTest,
+    User,
+    Association,
+    Order,
 )
 
 
@@ -23,35 +27,51 @@ class SingleOperationBaseTest(BaseTest):
         self.delete_all_data_in_orm_table()
 
     def test_by_pk(self):
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             ses.add(User(id=1, name="alice"))
             ses.commit()
 
         assert User.by_pk(self.eng, 1).name == "alice"
         assert User.by_pk(self.eng, (1,)).name == "alice"
-        assert User.by_pk(self.eng, [1, ]).name == "alice"
+        assert (
+            User.by_pk(
+                self.eng,
+                [
+                    1,
+                ],
+            ).name
+            == "alice"
+        )
         assert User.by_pk(self.eng, 0) is None
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             assert User.by_pk(ses, 1).name == "alice"
             assert User.by_pk(ses, (1,)).name == "alice"
-            assert User.by_pk(ses, [1, ]).name == "alice"
+            assert (
+                User.by_pk(
+                    ses,
+                    [
+                        1,
+                    ],
+                ).name
+                == "alice"
+            )
             assert User.by_pk(ses, 0) is None
 
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             ses.add(Association(x_id=1, y_id=2, flag=999))
             ses.commit()
 
         assert Association.by_pk(self.eng, (1, 2)).flag == 999
         assert Association.by_pk(self.eng, [1, 2]).flag == 999
         assert Association.by_pk(self.eng, (0, 0)) is None
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             assert Association.by_pk(ses, (1, 2)).flag == 999
             assert Association.by_pk(ses, [1, 2]).flag == 999
             assert Association.by_pk(ses, [0, 0]) is None
 
     def test_by_sql(self):
         assert User.count_all(self.eng) == 0
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             user_list = [
                 User(id=1, name="mr x"),
                 User(id=2, name="mr y"),
@@ -66,7 +86,7 @@ class SingleOperationBaseTest(BaseTest):
         results = User.by_sql(
             self.eng,
             """
-            SELECT * 
+            SELECT *
             FROM extended_declarative_base_user t
             WHERE t.id >= 2
             """,
@@ -75,11 +95,13 @@ class SingleOperationBaseTest(BaseTest):
 
         results = User.by_sql(
             self.eng,
-            sa.text("""
-            SELECT * 
+            sa.text(
+                """
+            SELECT *
             FROM extended_declarative_base_user t
             WHERE t.id >= 2
-            """),
+            """
+            ),
         )
         assert [user.name for user in results] == expected
 
@@ -97,7 +119,8 @@ class TestExtendedBaseOnPostgres(SingleOperationBaseTest):  # test on postgres
 
 
 if __name__ == "__main__":
-    import os
+    from sqlalchemy_mate.tests import run_cov_test
 
-    basename = os.path.basename(__file__)
-    pytest.main([basename, "-s", "--tb=native"])
+    run_cov_test(
+        __file__, "sqlalchemy_mate.orm.extended_declarative_base", preview=False
+    )

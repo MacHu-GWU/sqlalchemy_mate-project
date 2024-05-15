@@ -4,11 +4,10 @@
 Utilities function.
 """
 
-from typing import Type, Union, Tuple, Dict, Iterable
+import typing as T
 
 import sqlalchemy as sa
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker, Session
+import sqlalchemy.orm as orm
 
 
 def ensure_exact_one_arg_is_not_none(*args):
@@ -18,12 +17,14 @@ def ensure_exact_one_arg_is_not_none(*args):
 
 def ensure_list(item) -> list:
     if not isinstance(item, (list, tuple)):
-        return [item, ]
+        return [
+            item,
+        ]
     else:
         return item
 
 
-def grouper_list(l: Iterable, n: int) -> Iterable[list]:
+def grouper_list(l: T.Iterable, n: int) -> T.Iterable[list]:
     """Evenly divide list into fixed-length piece, no filled value if chunk
     size smaller than fixed-length.
 
@@ -56,12 +57,12 @@ def grouper_list(l: Iterable, n: int) -> Iterable[list]:
         yield chunk
 
 
-session_klass_cache = dict()  # type: Dict[int, Type[Session]]
+session_klass_cache: T.Dict[int, T.Type[orm.Session]] = dict()
 
 
 def ensure_session(
-    engine_or_session: Union[Engine, Session]
-) -> Tuple[Session, bool]:
+    engine_or_session: T.Union[sa.Engine, orm.Session]
+) -> T.Tuple[orm.Session, bool]:
     """
     If it is an engine, then create a session from it. And indicate that
     this session should be closed after the job done.
@@ -73,22 +74,22 @@ def ensure_session(
     Session 反正是新创建的. 如果传入的参数是 Session, 用完之后是否 close 取决于业务,
     所以 ``auto_close = False``.
     """
-    if isinstance(engine_or_session, Engine):
+    if isinstance(engine_or_session, sa.Engine):
         engine_id = id(engine_or_session)
         if engine_id not in session_klass_cache:  # pragma: no cover
-            session_klass_cache[engine_id] = sessionmaker(bind=engine_or_session)
+            session_klass_cache[engine_id] = orm.Session
         SessionClass = session_klass_cache[engine_id]
-        session = SessionClass()
+        session = SessionClass(engine_or_session)
         auto_close = True
         return session, auto_close
-    elif isinstance(engine_or_session, Session):
+    elif isinstance(engine_or_session, orm.Session):
         session = engine_or_session
         auto_close = False
         return session, auto_close
 
 
 def clean_session(
-    session: Session,
+    session: orm.Session,
     auto_close: bool,
 ):
     """
@@ -98,21 +99,21 @@ def clean_session(
         session.close()
 
 
-from .pkg import timeout_decorator
+from .vendor import timeout_decorator
 
 
 def test_connection(engine, timeout=3):
     @timeout_decorator.timeout(timeout)
     def _test_connection(engine):
-        v = engine.execute(sa.text("SELECT 1;")).fetchall()[0][0]
-        assert v == 1
+        with engine.connect() as connection:
+            v = connection.execute(sa.text("SELECT 1;")).fetchall()[0][0]
+            assert v == 1
 
     try:
         _test_connection(engine)
         return True
     except timeout_decorator.TimeoutError:
-        raise timeout_decorator.TimeoutError(
-            "time out in %s seconds!" % timeout)
+        raise timeout_decorator.TimeoutError("time out in %s seconds!" % timeout)
     except AssertionError:  # pragma: no cover
         raise ValueError
     except Exception as e:

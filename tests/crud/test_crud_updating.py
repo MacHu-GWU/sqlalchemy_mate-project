@@ -4,10 +4,13 @@ import pytest
 
 from sqlalchemy_mate.crud import selecting
 from sqlalchemy_mate.crud import updating
-from sqlalchemy_mate.crud import deleting
 from sqlalchemy_mate.tests import (
     IS_WINDOWS,
-    engine_sqlite, engine_psql, t_cache, t_graph, BaseTest
+    engine_sqlite,
+    engine_psql,
+    t_cache,
+    t_graph,
+    BaseTest,
 )
 
 
@@ -26,6 +29,7 @@ class UpdatingApiBaseTest(BaseTest):
         ]
         with self.engine.connect() as connection:
             connection.execute(ins, data)
+            connection.commit()
 
         # Upsert all
         data = [
@@ -34,14 +38,15 @@ class UpdatingApiBaseTest(BaseTest):
             {"key": "a3", "value": 3},  # This will insert
         ]
         # ------ Invoke ------
-        update_counter, insert_counter = updating.upsert_all(
-            self.engine, t_cache, data)
+        update_counter, insert_counter = updating.upsert_all(self.engine, t_cache, data)
         assert update_counter == 1
         assert insert_counter == 2
 
         # ------ After State ------
         assert list(selecting.select_all(self.engine, t_cache)) == [
-            ("a1", 1), ("a2", 2), ("a3", 3)
+            ("a1", 1),
+            ("a2", 2),
+            ("a3", 3),
         ]
 
     def test_upsert_all_multiple_primary_key_column(self):
@@ -52,6 +57,7 @@ class UpdatingApiBaseTest(BaseTest):
         ]
         with self.engine.connect() as connection:
             connection.execute(ins, data)
+            connection.commit()
 
         # ------ Invoke ------
         data = [
@@ -59,8 +65,7 @@ class UpdatingApiBaseTest(BaseTest):
             {"x_node_id": 1, "y_node_id": 3, "value": 3},  # This will insert
             {"x_node_id": 1, "y_node_id": 4, "value": 4},  # This will insert
         ]
-        update_counter, insert_counter = updating.upsert_all(
-            self.engine, t_graph, data)
+        update_counter, insert_counter = updating.upsert_all(self.engine, t_graph, data)
         assert update_counter == 1
         assert insert_counter == 2
 
@@ -68,7 +73,7 @@ class UpdatingApiBaseTest(BaseTest):
         assert selecting.select_all(self.engine, t_graph).all() == [
             (1, 2, 2),
             (1, 3, 3),
-            (1, 4, 4)
+            (1, 4, 4),
         ]
 
 
@@ -85,7 +90,6 @@ class TestUpdatingApiPostgres(UpdatingApiBaseTest):
 
 
 if __name__ == "__main__":
-    import os
+    from sqlalchemy_mate.tests import run_cov_test
 
-    basename = os.path.basename(__file__)
-    pytest.main([basename, "-s", "--tb=native"])
+    run_cov_test(__file__, "sqlalchemy_mate.crud.updating", preview=False)

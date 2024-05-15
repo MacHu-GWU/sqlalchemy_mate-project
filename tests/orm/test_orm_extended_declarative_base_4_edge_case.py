@@ -3,8 +3,11 @@
 import pytest
 from sqlalchemy_mate.tests import (
     IS_WINDOWS,
-    engine_sqlite, engine_psql, BaseTest,
-    Base, BankAccount, PostTagAssociation,
+    engine_sqlite,
+    engine_psql,
+    BaseTest,
+    BankAccount,
+    PostTagAssociation,
 )
 
 
@@ -39,14 +42,14 @@ class ExtendedBaseEdgeCaseTestBase(BaseTest):
             [
                 PostTagAssociation(post_id=1, tag_id=1, description="1-1"),
                 PostTagAssociation(post_id=1, tag_id=2, description="1-2"),
-            ]
+            ],
         )
         PostTagAssociation.smart_insert(
             self.eng,
             [
                 PostTagAssociation(post_id=1, tag_id=3, description="1-3"),
                 PostTagAssociation(post_id=1, tag_id=4, description="1-4"),
-            ]
+            ],
         )
 
         pta = PostTagAssociation.by_pk(self.eng, (1, 2))
@@ -67,7 +70,8 @@ class TestExtendedBaseOnPostgres(ExtendedBaseEdgeCaseTestBase):  # test on postg
 
 
 if __name__ == "__main__":
-    import os
+    from sqlalchemy_mate.tests import run_cov_test
 
-    basename = os.path.basename(__file__)
-    pytest.main([basename, "-s", "--tb=native"])
+    run_cov_test(
+        __file__, "sqlalchemy_mate.orm.extended_declarative_base", preview=False
+    )

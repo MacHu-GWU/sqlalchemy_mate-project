@@ -641,7 +641,7 @@ class ExtendedBase(Base):
                 for column in cls.__table__.columns
             ]
             stmt = select(*args)
-            results = [cls(**dict(row)) for row in ses.execute(stmt)]
+            results = [cls(**row._asdict()) for row in ses.execute(stmt)]
         else:
             raise ValueError
         clean_session(ses, auto_close)

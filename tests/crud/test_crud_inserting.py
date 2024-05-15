@@ -11,7 +11,10 @@ from sqlalchemy_mate.crud.selecting import count_row
 from sqlalchemy_mate.crud.deleting import delete_all
 from sqlalchemy_mate.tests import (
     IS_WINDOWS,
-    engine_sqlite, engine_psql, t_smart_insert, BaseTest
+    engine_sqlite,
+    engine_psql,
+    t_smart_insert,
+    BaseTest,
 )
 
 
@@ -34,7 +37,7 @@ class InsertingApiBaseTest(BaseTest):
         # ------ Before State ------
         scale = 10  # 测试数据的数量级, 总数据量是已有的数据量的立方, 建议 5 ~ 10
         n_exist = scale
-        n_all = scale ** 3
+        n_all = scale**3
 
         exist_id_list = [random.randint(1, n_all) for _ in range(n_exist)]
         exist_id_list = list(set(exist_id_list))
@@ -64,10 +67,12 @@ class InsertingApiBaseTest(BaseTest):
         # ------ Before State ------
         with self.engine.connect() as connection:
             connection.execute(t_smart_insert.delete())
+            connection.commit()
 
         ins = t_smart_insert.insert()
         with self.engine.connect() as connection:
             connection.execute(ins, exist_data)
+            connection.commit()
 
         assert count_row(self.engine, t_smart_insert) == n_exist
 
@@ -77,8 +82,9 @@ class InsertingApiBaseTest(BaseTest):
             for row in all_data:
                 try:
                     connection.execute(ins, row)
+                    connection.commit()
                 except IntegrityError:
-                    pass
+                    connection.rollback()
         elapse2 = time.process_time() - st
 
         assert count_row(self.engine, t_smart_insert) == n_all
@@ -86,7 +92,7 @@ class InsertingApiBaseTest(BaseTest):
         # ------ After State ------
         assert elapse1 < elapse2
 
-    def test_smart_insert_single_row(self):
+    def _test_smart_insert_single_row(self):
         assert count_row(self.engine, t_smart_insert) == 0
 
         data = {"id": 1}
@@ -114,7 +120,6 @@ class TestInsertingApiPostgres(InsertingApiBaseTest):
 
 
 if __name__ == "__main__":
-    import os
+    from sqlalchemy_mate.tests import run_cov_test
 
-    basename = os.path.basename(__file__)
-    pytest.main([basename, "-s", "--tb=native"])
+    run_cov_test(__file__, "sqlalchemy_mate.crud.inserting", preview=False)

@@ -5,7 +5,12 @@ import pytest
 from sqlalchemy_mate.crud import selecting
 from sqlalchemy_mate.tests import (
     IS_WINDOWS,
-    engine_sqlite, engine_psql, t_user, t_inv, t_smart_insert, BaseTest
+    engine_sqlite,
+    engine_psql,
+    t_user,
+    t_inv,
+    t_smart_insert,
+    BaseTest,
 )
 
 
@@ -27,14 +32,12 @@ class SelectingApiBaseTest(BaseTest):
             {"store_id": 2, "item_id": 2},
         ]
 
-        t_smart_insert_data = [
-            {"id": i}
-            for i in range(1, 1000 + 1)
-        ]
+        t_smart_insert_data = [{"id": i} for i in range(1, 1000 + 1)]
         with cls.engine.connect() as connection:
             connection.execute(t_user.insert(), t_user_data)
             connection.execute(t_inv.insert(), t_inv_data)
             connection.execute(t_smart_insert.insert(), t_smart_insert_data)
+            connection.commit()
 
     @classmethod
     def class_level_data_teardown(cls):
@@ -84,12 +87,16 @@ class SelectingApiBaseTest(BaseTest):
         assert data == ["Alice", "Bob", "Cathy"]
 
     def test_select_many_column(self):
-        data = selecting.select_many_column(self.engine, [t_user.c.user_id, ])
+        data = selecting.select_many_column(
+            self.engine,
+            [
+                t_user.c.user_id,
+            ],
+        )
         assert data == [(1,), (2,), (3,)]
 
         data = selecting.select_many_column(
-            engine=self.engine,
-            columns=[t_user.c.user_id, t_user.c.name]
+            engine=self.engine, columns=[t_user.c.user_id, t_user.c.name]
         )
         assert data == [(1, "Alice"), (2, "Bob"), (3, "Cathy")]
 
@@ -116,7 +123,9 @@ class SelectingApiBaseTest(BaseTest):
         results1 = [
             id_
             for (id_,) in selecting.select_random(
-                engine=self.engine, table=t_smart_insert, limit=5,
+                engine=self.engine,
+                table=t_smart_insert,
+                limit=5,
             )
         ]
         assert len(results1) == 5
@@ -124,16 +133,15 @@ class SelectingApiBaseTest(BaseTest):
         results2 = [
             id_
             for (id_,) in selecting.select_random(
-                engine=self.engine, columns=[t_smart_insert.c.id], limit=5,
+                engine=self.engine,
+                columns=[t_smart_insert.c.id],
+                limit=5,
             )
         ]
         assert len(results2) == 5
 
         # at least one element not the same
-        assert sum([
-            i1 != i2
-            for i1, i2 in zip(results1, results2)
-        ]) >= 1
+        assert sum([i1 != i2 for i1, i2 in zip(results1, results2)]) >= 1
 
         with pytest.raises(ValueError):
             selecting.select_random(engine=self.engine)
@@ -142,7 +150,9 @@ class SelectingApiBaseTest(BaseTest):
             selecting.select_random(
                 engine=self.engine,
                 table=t_smart_insert,
-                columns=[t_smart_insert.c.id, ],
+                columns=[
+                    t_smart_insert.c.id,
+                ],
             )
 
         with pytest.raises(ValueError):
@@ -179,14 +189,20 @@ class SelectingApiBaseTest(BaseTest):
         id_set = set(range(1, 1000 + 1))
 
         results = selecting.select_random(
-            engine=self.engine, table=t_smart_insert, perc=10,
+            engine=self.engine,
+            table=t_smart_insert,
+            perc=10,
         ).all()
         assert 50 <= len(results) <= 150
         for (id_,) in results:
             assert id_ in id_set
 
         results = selecting.select_random(
-            engine=self.engine, columns=[t_smart_insert.c.id, ], perc=10,
+            engine=self.engine,
+            columns=[
+                t_smart_insert.c.id,
+            ],
+            perc=10,
         ).all()
         assert 50 <= len(results) <= 150
         for (id_,) in results:
@@ -209,7 +225,6 @@ class TestSelectingApiPostgres(SelectingApiBaseTest):
 
 
 if __name__ == "__main__":
-    import os
+    from sqlalchemy_mate.tests import run_cov_test
 
-    basename = os.path.basename(__file__)
-    pytest.main([basename, "-s", "--tb=native"])
+    run_cov_test(__file__, "sqlalchemy_mate.crud.selecting", preview=False)

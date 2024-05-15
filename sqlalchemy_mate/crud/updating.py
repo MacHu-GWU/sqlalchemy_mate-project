@@ -4,21 +4,25 @@
 This module provide utility functions for update operation.
 """
 
-from typing import Union, List, Tuple, Dict, Any
+# from typing import Union, List, Tuple, Dict, Any
+import typing as T
 from collections import OrderedDict
-from sqlalchemy import and_
-from sqlalchemy import Table
-from sqlalchemy.engine import Engine
+
+import sqlalchemy as sa
+
+# from sqlalchemy import and_
+# from sqlalchemy import Table
+# from sqlalchemy.engine import Engine
 
 from ..utils import ensure_list
 
 
 def update_all(
-    engine: Engine,
-    table: Table,
-    data: Union[Dict[str, Any], List[Dict[str, Any]]],
+    engine: sa.Engine,
+    table: sa.Table,
+    data: T.Union[T.Dict[str, T.Any], T.List[T.Dict[str, T.Any]]],
     upsert=False,
-) -> Tuple[int, int]:
+) -> T.Tuple[int, int]:
     """
     Update data by its primary_key column values. By default upsert is False.
     """
@@ -42,13 +46,12 @@ def update_all(
         # Multiple primary key column
         if len(pk_cols) >= 2:
             for row in data:
-                result = engine.execute(
+                result = connection.execute(
                     upd.where(
-                        and_(
-                            *[col == row[name] for name, col in pk_cols.items()]
-                        )
+                        sa.and_(*[col == row[name] for name, col in pk_cols.items()])
                     ).values(**row)
                 )
+                connection.commit()
                 if result.rowcount == 0:
                     data_to_insert.append(row)
                 else:
@@ -56,11 +59,12 @@ def update_all(
         # Single primary key column
         elif len(pk_cols) == 1:
             for row in data:
-                result = engine.execute(
+                result = connection.execute(
                     upd.where(
                         [col == row[name] for name, col in pk_cols.items()][0]
                     ).values(**row)
                 )
+                connection.commit()
                 if result.rowcount == 0:
                     data_to_insert.append(row)
                 else:
@@ -71,17 +75,18 @@ def update_all(
         # Insert rest of data
         if upsert:
             if len(data_to_insert):
-                engine.execute(ins, data_to_insert)
+                connection.execute(ins, data_to_insert)
+                connection.commit()
                 insert_counter += len(data_to_insert)
 
         return update_counter, insert_counter
 
 
 def upsert_all(
-    engine: Engine,
-    table: Table,
-    data: Union[Dict[str, Any], List[Dict[str, Any]]],
-) -> Tuple[int, int]:
+    engine: sa.Engine,
+    table: sa.Table,
+    data: T.Union[T.Dict[str, T.Any], T.List[T.Dict[str, T.Any]]],
+) -> T.Tuple[int, int]:
     """
     Update data by primary key columns. If not able to update, do insert.
 
@@ -105,7 +110,7 @@ def upsert_all(
 
         # will return: [{"id": 1, "name": "Bob"}, {"id": 2, "name": "Cathy"}]
         with engine.connect() as connection:
-            print(connection.execute(select([table_user])).all())
+            print(connection.execute(select(table_user)).all())
 
     **中文文档**
 

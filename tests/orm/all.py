@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
 if __name__ == "__main__":
-    import pytest
+    from sqlalchemy_mate.tests import run_cov_test
 
-    pytest.main(["-s", "--tb=native"])
+    run_cov_test(__file__, "sqlalchemy_mate.orm", is_folder=True, preview=False)

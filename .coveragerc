@@ -3,11 +3,10 @@
 [run]
 omit =
     sqlalchemy_mate/_version.py
-    sqlalchemy_mate/cli.py
-    sqlalchemy_mate/pkg/*
+    sqlalchemy_mate/paths.py
     sqlalchemy_mate/docs/*
     sqlalchemy_mate/tests/*
-    sqlalchemy_mate/mig/*
+    sqlalchemy_mate/vendor/*
 
 [report]
 # Regexes for lines to exclude from consideration

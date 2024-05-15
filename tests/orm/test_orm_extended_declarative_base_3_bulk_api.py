@@ -10,13 +10,19 @@ import random
 import pytest
 
 import sqlalchemy as sa
-from sqlalchemy.orm import Session
+import sqlalchemy.orm as orm
 from sqlalchemy.orm.exc import FlushError
 from sqlalchemy.exc import IntegrityError
+
 from sqlalchemy_mate.tests import (
     IS_WINDOWS,
-    engine_sqlite, engine_psql, BaseTest,
-    Base, User, Association, Order,
+    engine_sqlite,
+    engine_psql,
+    BaseTest,
+    Base,
+    User,
+    Association,
+    Order,
 )
 
 
@@ -35,7 +41,7 @@ class BulkOperationTestBase(BaseTest):
         # ------ Before State ------
         scale = 10
         n_exist = scale
-        n_all = scale ** 3
+        n_all = scale**3
 
         exist_id_list = [random.randint(1, n_all) for _ in range(n_exist)]
         exist_id_list = list(set(exist_id_list))
@@ -46,14 +52,14 @@ class BulkOperationTestBase(BaseTest):
         exist_data = [User(id=user_id) for user_id in exist_id_list]
         all_data = [User(id=user_id) for user_id in range(1, 1 + n_all)]
 
-        with Session(self.engine) as ses:
+        with orm.Session(self.engine) as ses:
             ses.add_all(exist_data)
             ses.commit()
             assert User.count_all(ses) == n_exist
 
         # ------ Invoke ------
         st = time.process_time()
-        with Session(self.engine) as ses:
+        with orm.Session(self.engine) as ses:
             op_counter, insert_counter = User.smart_insert(ses, all_data)
             elapse1 = time.process_time() - st
             assert User.count_all(ses) == n_all
@@ -64,18 +70,20 @@ class BulkOperationTestBase(BaseTest):
 
         # user regular insert
         # ------ Before State ------
-        self.eng.execute(User.__table__.delete())
+        with self.eng.connect() as conn:
+            conn.execute(User.__table__.delete())
+            conn.commit()
 
         exist_data = [User(id=id) for id in exist_id_list]
         all_data = [User(id=id) for id in range(1, 1 + n_all)]
 
-        with Session(self.engine) as ses:
+        with orm.Session(self.engine) as ses:
             ses.add_all(exist_data)
             ses.commit()
             assert User.count_all(ses) == n_exist
 
         st = time.process_time()
-        with Session(self.engine) as ses:
+        with orm.Session(self.engine) as ses:
             for user in all_data:
                 try:
                     ses.add(user)
@@ -105,7 +113,7 @@ class BulkOperationTestBase(BaseTest):
         # single primary key column
         # ------ Before State ------
         User.smart_insert(self.eng, [User(id=1)])
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             assert ses.get(User, 1).name == None
 
         # ------ Invoke ------
@@ -115,34 +123,34 @@ class BulkOperationTestBase(BaseTest):
             [
                 User(id=1, name="Alice"),  # this is update
                 User(id=2, name="Bob"),  # this is not insert
-            ]
+            ],
         )
 
         # ------ After State ------
         assert update_count == 1
         assert insert_count == 0
 
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             assert User.count_all(ses) == 1  # User(Bob) not inserted
             assert ses.get(User, 1).name == "Alice"
             assert ses.get(User, 2) == None
 
         # ------ Invoke ------
         # upsert
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             update_count, insert_count = User.upsert_all(
                 ses,
                 [
                     User(id=1, name="Adam"),
                     User(id=2, name="Bob"),
-                ]
+                ],
             )
 
         # ------ After State ------
         assert update_count == 1
         assert insert_count == 1
 
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             assert User.count_all(ses) == 2  # User(Bob) got inserted
             assert ses.get(User, 1).name == "Adam"
             assert ses.get(User, 2).name == "Bob"
@@ -154,48 +162,52 @@ class BulkOperationTestBase(BaseTest):
 
         # ------ Invoke ------
         # update
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             update_counter, insert_counter = Association.update_all(
                 ses,
                 [
                     Association(x_id=1, y_id=1, flag=1),  # this is update
                     Association(x_id=1, y_id=2, flag=2),  # this is not insert
-                ]
+                ],
             )
 
         # ------ After State ------
         assert update_counter == 1
         assert insert_counter == 0
 
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             assert Association.count_all(ses) == 1
             assert ses.get(Association, (1, 1)).flag == 1
             assert ses.get(Association, (1, 2)) is None
 
         # ------ Invoke ------
         # upsert
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             update_count, insert_count = Association.upsert_all(
                 ses,
                 [
                     Association(x_id=1, y_id=1, flag=999),
                     Association(x_id=1, y_id=2, flag=2),
-                ]
+                ],
             )
 
         # ------ After State ------
         assert update_count == 1
         assert insert_count == 1
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             assert Association.count_all(ses) == 2
             assert ses.get(Association, (1, 1)).flag == 999
             assert ses.get(Association, (1, 2)).flag == 2
 
     def test_select_all(self):
-        with Session(self.eng) as ses:
-            ses.add_all([
-                User(id=1), User(id=2), User(id=3),
-            ])
+        with orm.Session(self.eng) as ses:
+            ses.add_all(
+                [
+                    User(id=1),
+                    User(id=2),
+                    User(id=3),
+                ]
+            )
             ses.commit()
 
             user_list = User.select_all(self.eng)
@@ -213,21 +225,18 @@ class BulkOperationTestBase(BaseTest):
         result1 = Order.random_sample(self.eng, limit=5)
         assert len(result1) == 5
 
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             result2 = Order.random_sample(ses, limit=5)
             assert len(result2) == 5
 
-        assert sum([
-            od1.id != od2.id
-            for od1, od2 in zip(result1, result2)
-        ]) >= 1
+        assert sum([od1.id != od2.id for od1, od2 in zip(result1, result2)]) >= 1
 
         self.psql_only_test_case()
 
     def psql_only_test_case(self):
         result3 = Order.random_sample(self.eng, perc=10)
 
-        with Session(self.eng) as ses:
+        with orm.Session(self.eng) as ses:
             result4 = Order.random_sample(ses, perc=10)
 
         assert result3[0].id != result4[0].id
@@ -249,7 +258,8 @@ class TestExtendedBaseOnPostgres(BulkOperationTestBase):  # test on postgres
 
 
 if __name__ == "__main__":
-    import os
+    from sqlalchemy_mate.tests import run_cov_test
 
-    basename = os.path.basename(__file__)
-    pytest.main([basename, "-s", "--tb=native"])
+    run_cov_test(
+        __file__, "sqlalchemy_mate.orm.extended_declarative_base", preview=False
+    )

@@ -1,20 +1,24 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import typing
 
-from sqlalchemy import String, Integer
-from sqlalchemy import create_engine, MetaData, Table, Column
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import declarative_base, Session
+import sqlalchemy as sa
+import sqlalchemy.orm as orm
+
+# from sqlalchemy import String, Integer
+# from sqlalchemy import create_engine, MetaData, Table, Column
+# from sqlalchemy.engine import Engine
+# from sqlalchemy.orm import declarative_base, Session
 
 from ..engine_creator import EngineCreator
 from ..orm.extended_declarative_base import ExtendedBase
 
+from .helper import run_cov_test
+
 IS_WINDOWS = sys.platform.lower().startswith("win")
 
 # use make run-psql to run postgres container on local
-engine_sqlite = create_engine("sqlite:///:memory:")
+engine_sqlite = sa.create_engine("sqlite:///:memory:")
 
 engine_psql = EngineCreator(
     username="postgres",
@@ -24,40 +28,45 @@ engine_psql = EngineCreator(
     port=40311,
 ).create_postgresql_pg8000()
 
-metadata = MetaData()
+metadata = sa.MetaData()
 
-t_user = Table(
-    "t_user", metadata,
-    Column("user_id", Integer, primary_key=True),
-    Column("name", String),
+t_user = sa.Table(
+    "t_user",
+    metadata,
+    sa.Column("user_id", sa.Integer, primary_key=True),
+    sa.Column("name", sa.String),
 )
 
-t_inv = Table(
-    "t_inventory", metadata,
-    Column("store_id", Integer, primary_key=True),
-    Column("item_id", Integer, primary_key=True),
+t_inv = sa.Table(
+    "t_inventory",
+    metadata,
+    sa.Column("store_id", sa.Integer, primary_key=True),
+    sa.Column("item_id", sa.Integer, primary_key=True),
 )
 
-t_smart_insert = Table(
-    "t_smart_insert", metadata,
-    Column("id", Integer, primary_key=True),
+t_smart_insert = sa.Table(
+    "t_smart_insert",
+    metadata,
+    sa.Column("id", sa.Integer, primary_key=True),
 )
 
-t_cache = Table(
-    "t_cache", metadata,
-    Column("key", String(), primary_key=True),
-    Column("value", Integer()),
+t_cache = sa.Table(
+    "t_cache",
+    metadata,
+    sa.Column("key", sa.String, primary_key=True),
+    sa.Column("value", sa.Integer),
 )
 
-t_graph = Table(
-    "t_edge", metadata,
-    Column("x_node_id", Integer, primary_key=True),
-    Column("y_node_id", Integer, primary_key=True),
-    Column("value", Integer),
+t_graph = sa.Table(
+    "t_edge",
+    metadata,
+    sa.Column("x_node_id", sa.Integer, primary_key=True),
+    sa.Column("y_node_id", sa.Integer, primary_key=True),
+    sa.Column("value", sa.Integer),
 )
 
 # --- Orm
-Base = declarative_base()
+Base = orm.declarative_base()
 
 
 class User(Base, ExtendedBase):
@@ -65,22 +74,23 @@ class User(Base, ExtendedBase):
 
     _settings_major_attrs = ["id", "name"]
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True)
+    id: orm.Mapped[int] = orm.mapped_column(sa.Integer, primary_key=True)
+    # name: orm.Mapped[str] = orm.mapped_column(sa.String, unique=True)
+    name: orm.Mapped[str] = orm.mapped_column(sa.String, nullable=True)
 
 
 class Association(Base, ExtendedBase):
     __tablename__ = "extended_declarative_base_association"
 
-    x_id = Column(Integer, primary_key=True)
-    y_id = Column(Integer, primary_key=True)
-    flag = Column(Integer)
+    x_id: orm.Mapped[int] = orm.mapped_column(sa.Integer, primary_key=True)
+    y_id: orm.Mapped[int] = orm.mapped_column(sa.Integer, primary_key=True)
+    flag: orm.Mapped[int] = orm.mapped_column(sa.Integer)
 
 
 class Order(Base, ExtendedBase):
     __tablename__ = "extended_declarative_base_order"
 
-    id = Column(Integer, primary_key=True)
+    id: orm.Mapped[int] = orm.mapped_column(sa.Integer, primary_key=True)
 
 
 class BankAccount(Base, ExtendedBase):
@@ -88,24 +98,24 @@ class BankAccount(Base, ExtendedBase):
 
     _settings_major_attrs = ["id", "name"]
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True)
-    pin = Column(String)
+    id: orm.Mapped[int] = orm.mapped_column(sa.Integer, primary_key=True)
+    name: orm.Mapped[str] = orm.mapped_column(sa.String, unique=True)
+    pin: orm.Mapped[str] = orm.mapped_column(sa.String)
 
 
 class PostTagAssociation(Base, ExtendedBase):
     __tablename__ = "extended_declarative_base_edge_case_post_tag_association"
 
-    post_id = Column(Integer, primary_key=True)
-    tag_id = Column(Integer, primary_key=True)
-    description = Column(String)
+    post_id: orm.Mapped[int] = orm.mapped_column(sa.Integer, primary_key=True)
+    tag_id: orm.Mapped[int] = orm.mapped_column(sa.Integer, primary_key=True)
+    description: orm.Mapped[str] = orm.mapped_column(sa.String)
 
 
 class BaseTest:
-    engine: Engine = None
+    engine: sa.Engine = None
 
     @property
-    def eng(self) -> Engine:
+    def eng(self) -> sa.Engine:
         """
         shortcut for ``self.engine``
         """
@@ -186,6 +196,7 @@ class BaseTest:
             connection.execute(t_cache.delete())
             connection.execute(t_graph.delete())
             connection.execute(t_smart_insert.delete())
+            connection.commit()
 
     @classmethod
     def delete_all_data_in_orm_table(cls):
@@ -195,3 +206,4 @@ class BaseTest:
             connection.execute(Order.__table__.delete())
             connection.execute(BankAccount.__table__.delete())
             connection.execute(PostTagAssociation.__table__.delete())
+            connection.commit()

@@ -2,27 +2,28 @@
 
 import sys
 import json
+
 import sqlalchemy as sa
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import declarative_base, Session
+import sqlalchemy.orm as orm
+
 from sqlalchemy_mate.types.compressed_json import CompressedJSONType
 from sqlalchemy_mate.tests import IS_WINDOWS, engine_sqlite, engine_psql
 
 import pytest
 
-Base = declarative_base()
+Base = orm.declarative_base()
 
 
 # an example mapping using the base
 class Order(Base):
     __tablename__ = "types_compressed_json_orders"
 
-    id = sa.Column(sa.Integer, primary_key=True)
-    items = sa.Column(CompressedJSONType)
+    id: orm.Mapped[int] = orm.mapped_column(sa.Integer, primary_key=True)
+    items: orm.Mapped[str] = orm.mapped_column(CompressedJSONType, nullable=True)
 
 
 class CompressedJSONBaseTest:
-    engine: Engine = None
+    engine: sa.Engine = None
 
     id_ = 1
     items = [
@@ -41,14 +42,15 @@ class CompressedJSONBaseTest:
 
         with cls.engine.connect() as conn:
             conn.execute(Order.__table__.delete())
+            conn.commit()
 
-        with Session(cls.engine) as ses:
+        with orm.Session(cls.engine) as ses:
             order = Order(id=cls.id_, items=cls.items)
             ses.add(order)
             ses.commit()
 
     def test_read_and_write(self):
-        with Session(self.engine) as ses:
+        with orm.Session(self.engine) as ses:
             order = ses.get(Order, self.id_)
             assert order.items == self.items
 
@@ -62,7 +64,8 @@ class CompressedJSONBaseTest:
     def test_underlying_data_is_compressed(self):
         metadata = sa.MetaData()
         t_user = sa.Table(
-            "types_compressed_json_orders", metadata,
+            "types_compressed_json_orders",
+            metadata,
             sa.Column("id", sa.Integer, primary_key=True),
             sa.Column("items", sa.LargeBinary),
         )
@@ -73,7 +76,7 @@ class CompressedJSONBaseTest:
             assert sys.getsizeof(order[1]) <= sys.getsizeof(json.dumps(self.items))
 
     def test_select_where(self):
-        with Session(self.engine) as ses:
+        with orm.Session(self.engine) as ses:
             order = ses.scalars(sa.select(Order).where(Order.items == self.items)).one()
             assert order.items == self.items
 
@@ -90,13 +93,12 @@ class TestPsql(CompressedJSONBaseTest):  # pragma: no cover
     engine = engine_psql
 
     def test_select_where(self):
-        with Session(self.engine) as ses:
+        with orm.Session(self.engine) as ses:
             order = ses.scalars(sa.select(Order).where(Order.items == self.items)).one()
             assert order.items == self.items
 
 
 if __name__ == "__main__":
-    import os
+    from sqlalchemy_mate.tests import run_cov_test
 
-    basename = os.path.basename(__file__)
-    pytest.main([basename, "-s", "--tb=native"])
+    run_cov_test(__file__, "sqlalchemy_mate.types.compressed_json", preview=False)

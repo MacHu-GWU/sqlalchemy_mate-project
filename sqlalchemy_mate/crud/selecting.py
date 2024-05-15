@@ -4,15 +4,16 @@
 This module provide utility functions for select operation.
 """
 
-from typing import List, Union, Iterable
-from sqlalchemy import select, func, Column, Table, and_
-from sqlalchemy.engine import Engine, Result, Row
+import typing as T
+
+import sqlalchemy as sa
+
 from ..utils import ensure_exact_one_arg_is_not_none
 
 
 def count_row(
-    engine: Engine,
-    table: Table,
+    engine: sa.Engine,
+    table: sa.Table,
 ) -> int:
     """
     Return number of rows in a table.
@@ -32,15 +33,15 @@ def count_row(
     """
     with engine.connect() as connection:
         return connection.execute(
-            select([func.count()]).select_from(table)
+            sa.select(sa.func.count()).select_from(table)
         ).fetchone()[0]
 
 
 def by_pk(
-    engine: Engine,
-    table: Table,
+    engine: sa.Engine,
+    table: sa.Table,
     id_,
-) -> Union[Row, None]:
+) -> T.Union[sa.Row, None]:
     """
     Return single row or None by primary key values.
 
@@ -70,21 +71,20 @@ def by_pk(
             where_args = list()
             for column, value in zip(table.primary_key, id_):
                 where_args.append(column == value)
-            return connection.execute(
-                select(table).where(and_(*where_args))
-            ).fetchone()
+            stmt = sa.select(table).where(sa.and_(*where_args))
+            return connection.execute(stmt).fetchone()
         else:
             if len(table.primary_key) != 1:
                 raise ValueError
             return connection.execute(
-                select(table).where(list(table.primary_key)[0] == id_)
+                sa.select(table).where(list(table.primary_key)[0] == id_)
             ).fetchone()
 
 
 def select_all(
-    engine: Engine,
-    table: Table,
-) -> Result:
+    engine: sa.Engine,
+    table: sa.Table,
+) -> sa.Result:
     """
     Select all rows from a table.
 
@@ -93,14 +93,14 @@ def select_all(
         for row in sam.selecting.select_all(engine, t_users):
             ...
     """
-    s = select([table])
+    s = sa.select(table)
     with engine.connect() as connection:
         return connection.execute(s)
 
 
 def select_single_column(
-    engine: Engine,
-    column: Column,
+    engine: sa.Engine,
+    column: sa.Column,
 ) -> list:
     """
     Select data from single column.
@@ -109,15 +109,15 @@ def select_single_column(
 
         id_list = sam.selecting.select_all(engine, t_users.c.id)
     """
-    s = select([column])
+    s = sa.select(column)
     with engine.connect() as connection:
         return [row[0] for row in connection.execute(s)]
 
 
 def select_many_column(
-    engine: Engine,
-    columns: List[Column],
-) -> List[tuple]:
+    engine: sa.Engine,
+    columns: T.List[sa.Column],
+) -> T.List[tuple]:
     """
     Select data from multiple columns.
 
@@ -125,14 +125,14 @@ def select_many_column(
 
         dataframe = sam.selecting.select_all(engine, [t_users.c.id, t_users.c.name])
     """
-    s = select(columns)
+    s = sa.select(*columns)
     with engine.connect() as connection:
         return [tuple(row) for row in connection.execute(s)]
 
 
 def select_single_distinct(
-    engine: Engine,
-    column: Column,
+    engine: sa.Engine,
+    column: sa.Column,
 ) -> list:
     """
     Select distinct data from single column.
@@ -141,15 +141,15 @@ def select_single_distinct(
 
         unique_name_list = sam.selecting.select_all(engine, t_users.c.name)
     """
-    s = select([column]).distinct()
+    s = sa.select(column).distinct()
     with engine.connect() as connection:
         return [row[0] for row in connection.execute(s)]
 
 
 def select_many_distinct(
-    engine: Engine,
-    columns: List[Column],
-) -> List[tuple]:
+    engine: sa.Engine,
+    columns: T.List[sa.Column],
+) -> T.List[tuple]:
     """
     Select distinct data from multiple columns.
 
@@ -157,18 +157,18 @@ def select_many_distinct(
 
         dataframe = sam.selecting.select_many_distinct(engine, [t_users.c.id, t_users.c.name])
     """
-    s = select(columns).distinct()
+    s = sa.select(*columns).distinct()
     with engine.connect() as connection:
         return [tuple(row) for row in connection.execute(s)]
 
 
 def select_random(
-    engine: Engine,
-    table: Table = None,
-    columns: List[Column] = None,
+    engine: sa.Engine,
+    table: sa.Table = None,
+    columns: T.List[sa.Column] = None,
     limit: int = None,
-    perc: int = None
-) -> Result:
+    perc: int = None,
+) -> sa.Result:
     """
     Randomly select some rows from table.
 
@@ -189,37 +189,27 @@ def select_random(
 
     if table is not None:
         if limit is not None:
-            stmt = select(table).order_by(func.random()).limit(limit)
+            stmt = sa.select(table).order_by(sa.func.random()).limit(limit)
         else:
             if perc >= 100 or perc <= 0:
                 raise ValueError
 
             selectable = table.tablesample(
-                func.bernoulli(perc),
-                name="alias",
-                seed=func.random()
+                sa.func.bernoulli(perc), name="alias", seed=sa.func.random()
             )
-            args = [
-                getattr(selectable.c, column.name)
-                for column in table.columns
-            ]
-            stmt = select(*args)
+            args = [getattr(selectable.c, column.name) for column in table.columns]
+            stmt = sa.select(*args)
     elif columns is not None:
         if limit is not None:
-            stmt = select(columns).order_by(func.random()).limit(limit)
+            stmt = sa.select(*columns).order_by(sa.func.random()).limit(limit)
         else:
             if perc >= 100 or perc <= 0:
                 raise ValueError
             selectable = columns[0].table.tablesample(
-                func.bernoulli(perc),
-                name="alias",
-                seed=func.random()
+                sa.func.bernoulli(perc), name="alias", seed=sa.func.random()
             )
-            args = [
-                getattr(selectable.c, column.name)
-                for column in columns
-            ]
-            stmt = select(*args)
+            args = [getattr(selectable.c, column.name) for column in columns]
+            stmt = sa.select(*args)
     else:  # pragma: no cover, for readability only
         raise NotImplementedError
 
@@ -227,7 +217,7 @@ def select_random(
         return connection.execute(stmt)
 
 
-def yield_tuple(result: Result) -> Iterable[tuple]:
+def yield_tuple(result: sa.Result) -> T.Iterable[tuple]:
     """
     Yield rows in tuple values view.
     """
@@ -235,9 +225,9 @@ def yield_tuple(result: Result) -> Iterable[tuple]:
         yield tuple(row)
 
 
-def yield_dict(result: Result) -> Iterable[dict]:
+def yield_dict(result: sa.Result) -> T.Iterable[dict]:
     """
     Yield rows in dict view.
     """
     for row in result:
-        yield dict(row)
+        yield row._asdict()

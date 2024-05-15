@@ -4,25 +4,25 @@
 This module provide utility functions for insert operation.
 """
 
+import typing as T
 import math
-from typing import Union, List, Tuple
-from sqlalchemy import Table
-from sqlalchemy.engine import Engine, Connection
+
+import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError
 
 from ..utils import grouper_list
 
 
 def smart_insert(
-    engine: Engine,
-    table: Table,
-    data: Union[dict, List[dict]],
+    engine: sa.Engine,
+    table: sa.Table,
+    data: T.Union[dict, T.List[dict]],
     minimal_size: int = 5,
-    _connection: Connection = None,
+    _connection: sa.Connection = None,
     _op_counter: int = 0,
     _ins_counter: int = 0,
     _is_first_call: bool = True,
-) -> Tuple[int, int]:
+) -> T.Tuple[int, int]:
     """
     An optimized Insert strategy. Guarantee successful and highest insertion
     speed. But ATOMIC WRITE IS NOT ENSURED IF THE PROGRAM IS INTERRUPTED.
@@ -48,17 +48,19 @@ def smart_insert(
     insert = table.insert()
 
     if isinstance(data, list):
-        # 首先进行尝试bulk insert
+        # 首先进行尝试 bulk insert
         try:
             _connection.execute(insert, data)
+            _connection.commit()
             _op_counter += 1
             _ins_counter += len(data)
         # 失败了
         except IntegrityError:
+            _connection.rollback()
             # 分析数据量
             n = len(data)
             # 如果数据条数多于一定数量
-            if n >= minimal_size ** 2:
+            if n >= minimal_size**2:
                 # 则进行分包
                 n_chunk = math.floor(math.sqrt(n))
                 for chunk in grouper_list(data, n_chunk):
@@ -70,24 +72,26 @@ def smart_insert(
                         _connection=_connection,
                         _op_counter=_op_counter,
                         _ins_counter=_ins_counter,
-                        _is_first_call=False
+                        _is_first_call=False,
                     )
             # 否则则一条条地逐条插入
             else:
                 for row in data:
                     try:
-                        _connection.execute(insert, row)
+                        _connection.execute(insert.values(**row))
+                        _connection.commit()
                         _op_counter += 1
                         _ins_counter += 1
                     except IntegrityError:
-                        pass
+                        _connection.rollback()
     else:
         try:
             _connection.execute(insert, data)
+            _connection.commit()
             _op_counter += 1
             _ins_counter += 1
         except IntegrityError:
-            pass
+            _connection.rollback()
 
     if _is_first_call:
         _connection.close()

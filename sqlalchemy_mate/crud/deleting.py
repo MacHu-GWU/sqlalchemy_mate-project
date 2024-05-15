@@ -4,16 +4,16 @@
 This module provide utility functions for delete operation.
 """
 
-from sqlalchemy import Table
-from sqlalchemy.engine import Engine
+import sqlalchemy as sa
 
 
 def delete_all(
-    engine: Engine,
-    table: Table,
+    engine: sa.Engine,
+    table: sa.Table,
 ):
     """
     Delete all data in a table.
     """
     with engine.connect() as connection:
         connection.execute(table.delete())
+        connection.commit()

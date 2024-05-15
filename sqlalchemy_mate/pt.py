@@ -13,35 +13,32 @@ ResultProxy, 而不是 ORM 对象的列表. 所以在 :func:`from_object`, :func
 最终返回 ResultProxy.
 """
 
-from typing import Union, Tuple, List
-from sqlalchemy import select, Table, text
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session
+import typing as T
 
-from sqlalchemy.orm import DeclarativeMeta
-from sqlalchemy.sql.selectable import Select
-from sqlalchemy.sql.elements import TextClause
-from sqlalchemy.engine.result import Result, ScalarResult, Row
+import sqlalchemy as sa
+import sqlalchemy.orm as orm
 
 from prettytable import PrettyTable
 
 from .utils import ensure_session, clean_session
 
 
-def get_keys_values(item) -> Tuple[Union[list, tuple], Union[list, tuple]]:
-    if isinstance(item.__class__, DeclarativeMeta):
+def get_keys_values(
+    item,
+) -> T.Tuple[T.Union[list, tuple], T.Union[list, tuple]]:
+    if isinstance(item.__class__, orm.DeclarativeMeta):
         keys, values = list(), list()
         for column in item.__class__.__table__.columns:
             keys.append(column.name)
             values.append(getattr(item, column.name))
         return keys, values
-    elif isinstance(item, Row):
+    elif isinstance(item, sa.Row):
         return list(item._fields), list(item)
     else:  # pragma: no cover
         raise TypeError
 
 
-def from_result(result: Union[Result, ScalarResult]):
+def from_result(result: T.Union[sa.Result, sa.ScalarResult]):
     pt = PrettyTable()
     try:
         first_item = next(result)
@@ -51,10 +48,10 @@ def from_result(result: Union[Result, ScalarResult]):
     except StopIteration:
         return pt
 
-    if isinstance(result, ScalarResult):
+    if isinstance(result, sa.ScalarResult):
         for obj in result:
             pt.add_row([getattr(obj, key) for key in keys])
-    elif isinstance(result, Result):
+    elif isinstance(result, sa.Result):
         for row in result:
             pt.add_row(list(row))
     else:
@@ -63,11 +60,7 @@ def from_result(result: Union[Result, ScalarResult]):
     return pt
 
 
-def from_text_clause(
-    t: TextClause,
-    engine: Engine,
-    **kwargs
-) -> PrettyTable:
+def from_text_clause(t: sa.TextClause, engine: sa.Engine, **kwargs) -> PrettyTable:
     """
     Execute a query in form of texture clause, return the result in form of
     :class:`PrettyTable`.
@@ -77,11 +70,7 @@ def from_text_clause(
         return from_result(result)
 
 
-def from_stmt(
-    stmt: Select,
-    engine: Engine,
-    **kwargs
-) -> PrettyTable:
+def from_stmt(stmt: sa.Select, engine: sa.Engine, **kwargs) -> PrettyTable:
     """
     Create a :class:`prettytable.PrettyTable` from :class:`sqlalchemy.select`.
 
@@ -98,10 +87,7 @@ def from_stmt(
 
 
 def from_table(
-    table: Table,
-    engine: Engine,
-    limit: int = None,
-    **kwargs
+    table: sa.Table, engine: sa.Engine, limit: int = None, **kwargs
 ) -> PrettyTable:
     """
     Select data in a database table and put into prettytable.
@@ -116,7 +102,7 @@ def from_table(
 
     将数据表中的数据放入 PrettyTable 中.
     """
-    stmt = select([table])
+    stmt = sa.select(table)
     if limit is not None:
         stmt = stmt.limit(limit)
     with engine.connect() as connection:
@@ -126,7 +112,7 @@ def from_table(
 
 def from_model(
     orm_class,
-    engine_or_session: Union[Engine, Session],
+    engine_or_session: T.Union[sa.Engine, orm.Session],
     limit: int = None,
     **kwargs
 ):
@@ -145,7 +131,7 @@ def from_model(
     常用于快速预览某个对象背后的数据.
     """
     ses, auto_close = ensure_session(engine_or_session)
-    stmt = select(orm_class.__table__)
+    stmt = sa.select(orm_class.__table__)
     if limit is not None:
         stmt = stmt.limit(limit)
     result = ses.execute(stmt, **kwargs)
@@ -154,7 +140,7 @@ def from_model(
     return tb
 
 
-def from_dict_list(data: List[dict]) -> PrettyTable:
+def from_dict_list(data: T.List[dict]) -> PrettyTable:
     """
     Construct a Prettytable from list of dictionary.
     """
@@ -169,10 +155,14 @@ def from_dict_list(data: List[dict]) -> PrettyTable:
 
 
 def from_everything(
-    everything: Union[
-        TextClause, Select, Table, List[dict], DeclarativeMeta
+    everything: T.Union[
+        sa.TextClause,
+        sa.Select,
+        sa.Table,
+        T.List[dict],
+        orm.DeclarativeMeta,
     ],
-    engine_or_session: Union[Engine, Session] = None,
+    engine_or_session: T.Union[sa.Engine, orm.Session] = None,
     limit: int = None,
     **kwargs
 ):
@@ -187,7 +177,7 @@ def from_everything(
 
         from sqlalchemy import select
 
-        sql = select([t_user])
+        sql = select(t_user)
         print(from_everything(sql, engine))
 
         query = session.query(User)
@@ -195,22 +185,22 @@ def from_everything(
 
         session.query(User)
     """
-    if isinstance(everything, TextClause):
+    if isinstance(everything, sa.TextClause):
         return from_text_clause(everything, engine_or_session, **kwargs)
 
     if isinstance(everything, str):
-        return from_text_clause(text(everything), engine_or_session, **kwargs)
+        return from_text_clause(sa.text(everything), engine_or_session, **kwargs)
 
-    if isinstance(everything, Select):
+    if isinstance(everything, sa.Select):
         return from_stmt(everything, engine_or_session, **kwargs)
 
-    if isinstance(everything, Table):
+    if isinstance(everything, sa.Table):
         return from_table(everything, engine_or_session, limit=limit, **kwargs)
 
-    if isinstance(everything, DeclarativeMeta):
+    if isinstance(everything, orm.DeclarativeMeta):
         return from_model(everything, engine_or_session, limit=limit, **kwargs)
 
-    if isinstance(everything, Result):
+    if isinstance(everything, sa.Result):
         return from_result(everything)
 
     if isinstance(everything, list):

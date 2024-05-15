@@ -10,12 +10,18 @@ __github_username__ = "MacHu-GWU"
 
 
 try:
-    from . import engine_creator, io, pt, types
+    from . import engine_creator
+    from . import io
+    from . import pt
+    from . import types
     from .utils import test_connection
     from .engine_creator import EngineCreator
-    from .crud import selecting, inserting, updating, deleting
+    from .crud import selecting
+    from .crud import inserting
+    from .crud import updating
+    from .crud import deleting
     from .orm.extended_declarative_base import ExtendedBase
-    from .pkg.timeout_decorator import TimeoutError
+    from .vendor.timeout_decorator import TimeoutError
 except ImportError as e:  # pragma: no cover
     print(e)
 except Exception as e:  # pragma: no cover

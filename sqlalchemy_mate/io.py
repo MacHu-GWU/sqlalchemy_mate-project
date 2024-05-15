@@ -5,13 +5,12 @@ Database data/Local File I/O module.
 """
 
 import os
-from sqlalchemy import select
-from sqlalchemy.engine import Engine
+import sqlalchemy as sa
 
 
 def sql_to_csv(
     stmt,
-    engine: Engine,
+    engine: sa.Engine,
     filepath: str,
     chunksize: int = 1000,
     overwrite: bool = False,
@@ -36,24 +35,31 @@ def sql_to_csv(
 
     import pandas as pd
 
-    columns = [str(column.name) for column in stmt.columns]
+    columns = [str(column.name) for column in stmt.selected_columns]
     with open(filepath, "w") as f:
         # write header
         df = pd.DataFrame([], columns=columns)
         df.to_csv(f, header=True, index=False)
 
         # iterate big database table
-        result_proxy = engine.execute(stmt)
-        while True:
-            data = result_proxy.fetchmany(chunksize)
-            if len(data) == 0:
-                break
-            else:
-                df = pd.DataFrame(data, columns=columns)
-                df.to_csv(f, header=False, index=False)
+        with engine.connect() as connection:
+            result_proxy = connection.execute(stmt)
+            while True:
+                data = result_proxy.fetchmany(chunksize)
+                if len(data) == 0:
+                    break
+                else:
+                    df = pd.DataFrame(data, columns=columns)
+                    df.to_csv(f, header=False, index=False)
 
 
-def table_to_csv(table, engine, filepath, chunksize=1000, overwrite=False):
+def table_to_csv(
+    table: sa.Table,
+    engine: sa.Engine,
+    filepath,
+    chunksize: int = 1000,
+    overwrite: bool = False,
+):
     """
     Export entire table to a csv file.
 
@@ -67,5 +73,5 @@ def table_to_csv(table, engine, filepath, chunksize=1000, overwrite=False):
 
     将整个表中的所有数据, 写入csv文件。
     """
-    sql = select([table])
+    sql = sa.select(table)
     sql_to_csv(sql, engine, filepath, chunksize)

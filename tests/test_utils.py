@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import sys
 
 import pytest
-from sqlalchemy import select
-from sqlalchemy.orm import Session
 from sqlalchemy_mate import utils
 from sqlalchemy_mate import EngineCreator, TimeoutError
 from sqlalchemy_mate.tests import (
@@ -54,7 +51,6 @@ class TestUtilityPostgres(UtilityTestBase):
 
 
 if __name__ == "__main__":
-    import os
+    from sqlalchemy_mate.tests import run_cov_test
 
-    basename = os.path.basename(__file__)
-    pytest.main([basename, "-s", "--tb=native"])
+    run_cov_test(__file__, "sqlalchemy_mate.utils", preview=False)
