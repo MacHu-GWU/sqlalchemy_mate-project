@@ -28,7 +28,7 @@ Backlog (TODO)
 
 **Minor Improvements**
 
-- Migrate to cookiecutter-pyproject v4 code skeleton.
+- Migrate to `cookiecutter-pyproject v4 <https://github.com/MacHu-GWU/cookiecutter-pyproject/releases/tag/v4>`_ code skeleton.
 
 
 1.4.28.4 (2023-03-15)
