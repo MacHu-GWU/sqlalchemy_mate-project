@@ -4,7 +4,6 @@ Release v\ |release| (:ref:`What's new? <release_history>`).
 
 Table of Content
 ------------------------------------------------------------------------------
-
 .. autotoctree::
 
 .. include:: ../../AUTHORS.rst
@@ -12,6 +11,5 @@ Table of Content
 
 API Document
 ------------------------------------------------------------------------------
-
 * :ref:`by Name <genindex>`
 * :ref:`by Structure <modindex>`

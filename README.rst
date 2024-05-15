@@ -17,6 +17,9 @@
 .. image:: https://img.shields.io/pypi/pyversions/sqlalchemy_mate.svg
     :target: https://pypi.python.org/pypi/sqlalchemy_mate
 
+.. image:: https://img.shields.io/badge/Release_History!--None.svg?style=social
+    :target: https://github.com/MacHu-GWU/sqlalchemy_mate-project/blob/main/release-history.rst
+
 .. image:: https://img.shields.io/badge/STAR_Me_on_GitHub!--None.svg?style=social
     :target: https://github.com/MacHu-GWU/sqlalchemy_mate-project
 
@@ -49,7 +52,6 @@
 
 Welcome to ``sqlalchemy_mate`` Documentation
 ==============================================================================
-
 A sweet syntax sugar library simplify your in writing ``sqlalchemy`` code.
 
 
