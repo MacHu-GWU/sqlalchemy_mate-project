@@ -10,5 +10,7 @@ sub packages and modules
 .. toctree::
     :maxdepth: 1
 
+    compressed <compressed>
     compressed_json <compressed_json>
+    json_serializable <json_serializable>
     

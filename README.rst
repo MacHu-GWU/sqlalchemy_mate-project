@@ -1,8 +1,8 @@
 .. image:: https://readthedocs.org/projects/sqlalchemy_mate/badge/?version=latest
-    :target: https://sqlalchemy_mate.readthedocs.io/index.html
+    :target: https://sqlalchemy-mate.readthedocs.io/index.html
     :alt: Documentation Status
 
-.. image:: https://github.com/MacHu-GWU/sqlalchemy_mate-project/workflows/CI/badge.svg
+.. image:: https://github.com/MacHu-GWU/sqlalchemy_mate-project/actions/workflows/main.yml/badge.svg
     :target: https://github.com/MacHu-GWU/sqlalchemy_mate-project/actions?query=workflow:CI
 
 .. image:: https://codecov.io/gh/MacHu-GWU/sqlalchemy_mate-project/branch/master/graph/badge.svg
@@ -22,15 +22,14 @@
 
 ------
 
-
 .. image:: https://img.shields.io/badge/Link-Document-blue.svg
-      :target: https://sqlalchemy_mate.readthedocs.io/index.html
+      :target: https://sqlalchemy-mate.readthedocs.io/index.html
 
 .. image:: https://img.shields.io/badge/Link-API-blue.svg
-      :target: https://sqlalchemy_mate.readthedocs.io/py-modindex.html
+      :target: https://sqlalchemy-mate.readthedocs.io/py-modindex.html
 
 .. image:: https://img.shields.io/badge/Link-Source_Code-blue.svg
-      :target: https://sqlalchemy_mate.readthedocs.io/py-modindex.html
+      :target: https://sqlalchemy-mate.readthedocs.io/py-modindex.html
 
 .. image:: https://img.shields.io/badge/Link-Install-blue.svg
       :target: `install`_
@@ -56,7 +55,6 @@ A sweet syntax sugar library simplify your in writing ``sqlalchemy`` code.
 
 Features
 ------------------------------------------------------------------------------
-
 .. contents::
     :class: this-will-duplicate-information-and-it-is-still-useful-here
     :depth: 1
@@ -65,7 +63,6 @@ Features
 
 Read Database Credential Safely
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 .. contents::
     :class: this-will-duplicate-information-and-it-is-still-useful-here
     :depth: 1

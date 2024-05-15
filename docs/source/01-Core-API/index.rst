@@ -2,12 +2,6 @@
 
 Core API
 ==============================================================================
-
-.. contents::
-    :class: this-will-duplicate-information-and-it-is-still-useful-here
-    :depth: 1
-    :local:
-
 In this section, we demonstrate the simplified version with ``sqlalchemy_mate`` to manipulate data using core API.
 
 First, let's define a table to get start, everything looks normal so far.

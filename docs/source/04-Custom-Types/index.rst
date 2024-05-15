@@ -3,11 +3,6 @@
 Custom Types
 ==============================================================================
 
-.. contents::
-    :class: this-will-duplicate-information-and-it-is-still-useful-here
-    :depth: 1
-    :local:
-
 
 Compressed String
 ------------------------------------------------------------------------------
@@ -30,6 +25,7 @@ Any JSON serializable object, if implemented ``to_json(self):`` and ``from_json(
 
 .. code-block:: python
 
+    import sqlalchemy.orm as orm
     import jsonpickle
 
     # a custom python class
@@ -44,7 +40,7 @@ Any JSON serializable object, if implemented ``to_json(self):`` and ``from_json(
         def from_json(cls, json_str: str) -> 'Computer':
             return cls(**jsonpickle.decode(json_str))
 
-    Base = declarative_base()
+    Base = orm.declarative_base()
 
     class Computer(Base):
         id = Column(Integer, primary_key)

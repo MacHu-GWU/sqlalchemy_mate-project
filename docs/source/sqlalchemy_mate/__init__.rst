@@ -13,7 +13,6 @@ sub packages and modules
     crud <crud/__init__>
     orm <orm/__init__>
     types <types/__init__>
-    _version <_version>
     engine_creator <engine_creator>
     io <io>
     pt <pt>

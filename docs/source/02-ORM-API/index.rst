@@ -3,31 +3,25 @@
 ORM API
 ==============================================================================
 
-.. contents::
-    :class: this-will-duplicate-information-and-it-is-still-useful-here
-    :depth: 1
-    :local:
-
 
 Extended Declarative Base
 ------------------------------------------------------------------------------
-
 ``sqlalchemy_mate.ExtendedBase`` is a Mixin class that enables many convenient method for your ORM model. In this
 
 .. code-block:: python
 
     import sqlalchemy as sa
-    from sqlalchemy.orm import declarative_base
+    import sqlalchemy.orm as orm
     import sqlalchemy_mate as sam
 
-    Base = declarative_base()
+    Base = orm.declarative_base()
 
     # add sqlalchemy_mate.ExtendedBase Mixin class
     class User(Base, sam.ExtendedBase):
         __tablename__ = "users"
 
-        id = sa.Column(sa.Integer, primary_key=True)
-        name = sa.Column(sa.String, nullable=True)
+        id: orm.Mapped[int] = orm.mapped_column(sa.Integer, primary_key=True)
+        name: orm.Mapped[str] = orm.mapped_column(sa.String, nullable=True)
 
         # put important columns here
         # you can choose to print those columns only with ``.glance()`` method.
@@ -70,7 +64,6 @@ Python dict can update values based on another dict, A data model should be able
 
 Insert, Select, Update
 ------------------------------------------------------------------------------
-
 Talk is cheap, show me the Code.
 
 .. code-block:: python

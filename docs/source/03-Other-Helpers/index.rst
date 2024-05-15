@@ -3,15 +3,9 @@
 Other Helpers
 ==============================================================================
 
-.. contents::
-    :class: this-will-duplicate-information-and-it-is-still-useful-here
-    :depth: 1
-    :local:
-
 
 User Friendly Engine Creator
 ------------------------------------------------------------------------------
-
 `This sqlalchemy Official Document <https://docs.sqlalchemy.org/en/latest/core/engines.html>`_ tells you the correct connection string to use for different DB driver. Who wants to Google the API document everytime?
 
 ``sqlalchemy_mate.EngineCreator`` leveraged the IDE / Code Editor that provide a user friendly interface to pass in DB connection specs and choose the underlying python driver.
