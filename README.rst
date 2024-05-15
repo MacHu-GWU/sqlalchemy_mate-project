@@ -212,16 +212,17 @@ If you want to read database credential safely from cloud, for example, AWS EC2,
 
 Smart Insert
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 In bulk insert, if there are some rows having primary_key conflict, the classic solution is:
 
 .. code-block:: python
 
-    for row in data:
-        try:
-            engine.execute(table.insert(), row)
-        except sqlalchemy.sql.IntegrityError:
-            pass
+    with engine.connect() as conn:
+        for row in data:
+            try:
+                conn.execute(table.insert(), row)
+                conn.commit()
+            except sqlalchemy.exc.IntegrityError:
+                conn.rollback()
 
 It is like one-by-one insert, which is super slow.
 
@@ -282,7 +283,6 @@ Automatically update value by primary key.
 
 Install
 ------------------------------------------------------------------------------
-
 ``sqlalchemy_mate`` is released on PyPI, so all you need is:
 
 .. code-block:: console

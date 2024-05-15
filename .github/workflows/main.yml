@@ -33,7 +33,7 @@ jobs:
           # Maps tcp port 5432 on service container to the host 43347
           - 40311:5432
     env: # define environment variables
-      USING_COVERAGE: "3.8,3.9,3.10,3.11"
+      USING_COVERAGE: "3.8,3.9,3.10,3.11,3.12"
     strategy:
       matrix:
         os: ["ubuntu-latest"]

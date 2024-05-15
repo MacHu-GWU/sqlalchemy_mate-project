@@ -1,11 +1,11 @@
 .. _release_history:
 
 Release and Version History
-===========================
+==============================================================================
 
 
 Backlog (TODO)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 **Features and Improvements**
 
 **Minor Improvements**
@@ -15,15 +15,31 @@ Backlog (TODO)
 **Miscellaneous**
 
 
+2.0.0 (TODO)
+------------------------------------------------------------------------------
+**💥Breaking Change**
+
+- From ``sqlalchemy_mate>=2.0.0``, it only support ``sqlalchemy>=2.0.0`` and only compatible with sqlalchemy 2.X API.
+- Drop Python3.7 support.
+
+**Features and Improvements**
+
+- Fully adapt sqlalchemy 2.X API.
+
+**Minor Improvements**
+
+- Migrate to cookiecutter-pyproject v4 code skeleton.
+
+
 1.4.28.4 (2023-03-15)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 **Bugfixes**
 
 - fix a syntax bug in ``requirements.txt``
 
 
 1.4.28.3 (2021-12-29)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 **Features and Improvements**
 
 - add ``sqlalchemy_mate.types.JSONSerializableType``
@@ -37,7 +53,7 @@ Backlog (TODO)
 
 
 1.4.28.2 (2021-12-18)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 **Features and Improvements**
 
 - add ``sqlalchemy_mate.types.CompressedJSONType`` column type.
@@ -45,7 +61,7 @@ Backlog (TODO)
 
 
 1.4.28.1 (2021-12-17)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 **Features and Improvements**
 
 - fully migrate to ``sqlalchemy`` 1.4+ 2.0 styled API, dropped < 1.3 API support
@@ -53,7 +69,7 @@ Backlog (TODO)
 
 
 0.0.11 (2020-12-05)
-~~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 **Features and Improvements**
 
 - ``ExtendedBase.by_id`` is renamed to ``ExtendedBase.by_pk``. The old method name is kept for backward API compatibility.
@@ -73,14 +89,14 @@ Backlog (TODO)
 
 
 0.0.10 (2019-04-26)
-~~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 **Minor Improvements**
 
-add type hint
+add type hint.
 
 
 0.0.9 (2019-04-26)
-~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 **Features and Improvements**
 
 - pretty table ``from_everything`` now support textual sql
@@ -99,7 +115,7 @@ add type hint
 
 
 0.0.8 (2019-03-04)
-~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 **Bugfixes**
 
 - fix import error in ``Credential.from_env`` with AWS KMS.
@@ -111,7 +127,7 @@ add type hint
 
 
 0.0.7 (2019-03-02)
-~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 **Features and Improvements**
 
 - add ``test_connection(engine, timeout=3)`` function.
@@ -123,15 +139,14 @@ add type hint
 
 
 0.0.6 (2019-03-02)
-~~~~~~~~~~~~~~~~~~
-
+------------------------------------------------------------------------------
 **Bugfixes**
 
 - add ``import boto3`` in ``Credential.from_s3_json()``
 
 
 0.0.5 (2019-03-01)
-~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 **Features and Improvements**
 
 - ``ExtendedBase.keys()`` now is a class method.
@@ -144,7 +159,7 @@ add type hint
 
 
 0.0.4 (2018-08-11)
-~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 **Features and Improvements**
 
 - add ``ExtendedBase.pk_names``, ``ExtendedBase.id_field_name``, ``ExtendedBase.by_id``, ``ExtendedBase.by_sql``, ``ExtendedBase.update_all``, ``ExtendedBase.upsert_all``.
@@ -159,7 +174,7 @@ add type hint
 
 
 0.0.3 (2018-07-22)
-~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 **Features and Improvements**
 
 - add a ``ExtendedBase`` class to give orm Declaritive Base more useful method.
@@ -183,7 +198,7 @@ add type hint
 
 
 0.0.2 (2018-07-03)
-~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 **Features and Improvements**
 
 - add more function can create PrettyTable from orm query, orm object, sql statement, table.
@@ -198,6 +213,6 @@ add type hint
 
 
 0.0.1 (2017-06-15)
-~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------------
 - First release
 - Add ``insert``, ``select``, ``update``, ``io``, ``pt`` module.
