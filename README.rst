@@ -1,5 +1,5 @@
 .. image:: https://readthedocs.org/projects/sqlalchemy_mate/badge/?version=latest
-    :target: https://sqlalchemy-mate.readthedocs.io/index.html
+    :target: https://sqlalchemy-mate.readthedocs.io/latest/index.html
     :alt: Documentation Status
 
 .. image:: https://github.com/MacHu-GWU/sqlalchemy_mate-project/actions/workflows/main.yml/badge.svg
@@ -26,13 +26,13 @@
 ------
 
 .. image:: https://img.shields.io/badge/Link-Document-blue.svg
-      :target: https://sqlalchemy-mate.readthedocs.io/index.html
+      :target: https://sqlalchemy-mate.readthedocs.io/latest/index.html
 
 .. image:: https://img.shields.io/badge/Link-API-blue.svg
-      :target: https://sqlalchemy-mate.readthedocs.io/py-modindex.html
+      :target: https://sqlalchemy-mate.readthedocs.io/latest/py-modindex.html
 
 .. image:: https://img.shields.io/badge/Link-Source_Code-blue.svg
-      :target: https://sqlalchemy-mate.readthedocs.io/py-modindex.html
+      :target: https://sqlalchemy-mate.readthedocs.io/latest/py-modindex.html
 
 .. image:: https://img.shields.io/badge/Link-Install-blue.svg
       :target: `install`_
