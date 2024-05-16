@@ -7,7 +7,7 @@ import sqlalchemy.orm as orm
 
 from prettytable import PrettyTable
 
-from sqlalchemy_mate import pt, selecting
+from sqlalchemy_mate.api import pt, selecting
 from sqlalchemy_mate.tests.api import (
     IS_WINDOWS,
     engine_sqlite,

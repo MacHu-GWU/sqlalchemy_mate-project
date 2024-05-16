@@ -3,7 +3,7 @@
 
 import pytest
 from sqlalchemy_mate import utils
-from sqlalchemy_mate import EngineCreator, TimeoutError
+from sqlalchemy_mate.api import EngineCreator, TimeoutError
 from sqlalchemy_mate.tests.api import (
     IS_WINDOWS,
     engine_sqlite,
