@@ -2,7 +2,7 @@
 
 
 def test():
-    import sqlalchemy_mate as sm
+    import sqlalchemy_mate.api as sm
 
     _ = sm.selecting.count_row
     _ = sm.selecting.by_pk

@@ -102,7 +102,7 @@ def clean_session(
 from .vendor import timeout_decorator
 
 
-def test_connection(engine, timeout=3):
+def test_connection(engine: sa.Engine, timeout=3):
     @timeout_decorator.timeout(timeout)
     def _test_connection(engine):
         with engine.connect() as connection:
