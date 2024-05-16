@@ -7,7 +7,7 @@ import sqlalchemy as sa
 import sqlalchemy.orm as orm
 
 from sqlalchemy_mate.types.compressed_json import CompressedJSONType
-from sqlalchemy_mate.tests import IS_WINDOWS, engine_sqlite, engine_psql
+from sqlalchemy_mate.tests.api import IS_WINDOWS, engine_sqlite, engine_psql
 
 import pytest
 
@@ -99,6 +99,6 @@ class TestPsql(CompressedJSONBaseTest):  # pragma: no cover
 
 
 if __name__ == "__main__":
-    from sqlalchemy_mate.tests import run_cov_test
+    from sqlalchemy_mate.tests.helper import run_cov_test
 
     run_cov_test(__file__, "sqlalchemy_mate.types.compressed_json", preview=False)

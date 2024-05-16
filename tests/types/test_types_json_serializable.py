@@ -6,7 +6,7 @@ import sqlalchemy as sa
 import sqlalchemy.orm as orm
 
 from sqlalchemy_mate.types.json_serializable import JSONSerializableType
-from sqlalchemy_mate.tests import IS_WINDOWS, engine_sqlite, engine_psql
+from sqlalchemy_mate.tests.api import IS_WINDOWS, engine_sqlite, engine_psql
 
 import pytest
 
@@ -29,7 +29,9 @@ class User(Base):
     __tablename__ = "types_json_serializable_users"
 
     id: orm.Mapped[int] = orm.mapped_column(sa.Integer, primary_key=True)
-    profile: orm.Mapped[Profile] = orm.mapped_column(JSONSerializableType(factory_class=Profile), nullable=True)
+    profile: orm.Mapped[Profile] = orm.mapped_column(
+        JSONSerializableType(factory_class=Profile), nullable=True
+    )
 
 
 class JSONSerializableBaseTest:
@@ -92,7 +94,6 @@ class TestPsql(JSONSerializableBaseTest):  # pragma: no cover
 
 
 if __name__ == "__main__":
-    import os
+    from sqlalchemy_mate.tests.helper import run_cov_test
 
-    basename = os.path.basename(__file__)
-    pytest.main([basename, "-s", "--tb=native"])
+    run_cov_test(__file__, "sqlalchemy_mate.types.json_serializable", preview=False)

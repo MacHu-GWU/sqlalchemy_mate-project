@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from sqlalchemy_mate.tests import (
+from sqlalchemy_mate.tests.api import (
     IS_WINDOWS,
     engine_sqlite,
     engine_psql,
-    BaseTest,
     BankAccount,
     PostTagAssociation,
+    BaseCrudTest,
 )
 
 
-class ExtendedBaseEdgeCaseTestBase(BaseTest):
+class ExtendedBaseEdgeCaseTestBase(BaseCrudTest):
     def test_absorb(self):
         user1 = BankAccount(id=1, name="Alice", pin="1234")
         user2 = BankAccount(name="Bob")
@@ -70,8 +70,10 @@ class TestExtendedBaseOnPostgres(ExtendedBaseEdgeCaseTestBase):  # test on postg
 
 
 if __name__ == "__main__":
-    from sqlalchemy_mate.tests import run_cov_test
+    from sqlalchemy_mate.tests.api import run_cov_test
 
     run_cov_test(
-        __file__, "sqlalchemy_mate.orm.extended_declarative_base", preview=False
+        __file__,
+        "sqlalchemy_mate.orm.extended_declarative_base",
+        preview=False,
     )

@@ -6,7 +6,7 @@ import pytest
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 
-from sqlalchemy_mate.tests import engine_psql as engine
+from sqlalchemy_mate.tests.api import engine_psql as engine
 from sqlalchemy_mate.patterns.status_tracker.impl import (
     JobLockedError,
     JobIgnoredError,
@@ -191,8 +191,10 @@ class TestJob:
 
 
 if __name__ == "__main__":
-    from sqlalchemy_mate.tests import run_cov_test
+    from sqlalchemy_mate.tests.api import run_cov_test
 
     run_cov_test(
-        __file__, "sqlalchemy_mate.patterns.status_tracker.impl", preview=False
+        __file__,
+        "sqlalchemy_mate.patterns.status_tracker.impl",
+        preview=False,
     )

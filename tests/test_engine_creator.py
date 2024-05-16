@@ -102,6 +102,6 @@ class TestEngineCreator(object):
 
 
 if __name__ == "__main__":
-    from sqlalchemy_mate.tests import run_cov_test
+    from sqlalchemy_mate.tests.helper import run_cov_test
 
     run_cov_test(__file__, "sqlalchemy_mate.engine_creator", preview=False)

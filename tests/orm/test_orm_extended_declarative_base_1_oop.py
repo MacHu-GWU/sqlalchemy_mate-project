@@ -8,8 +8,9 @@ from collections import OrderedDict
 
 from pytest import raises
 
-from sqlalchemy_mate.tests import (
-    User, Association,
+from sqlalchemy_mate.tests.api import (
+    User,
+    Association,
 )
 
 
@@ -23,8 +24,7 @@ class TestExtendedBaseOOP:
         assert User(id=1).values() == [1, None]
 
     def test_items(self):
-        assert User(id=1, name="Alice").items() == [
-            ("id", 1), ("name", "Alice")]
+        assert User(id=1, name="Alice").items() == [("id", 1), ("name", "Alice")]
         assert User(id=1).items() == [("id", 1), ("name", None)]
 
     def test_repr(self):
@@ -37,28 +37,38 @@ class TestExtendedBaseOOP:
         assert User(id=1).to_dict(include_null=False) == {"id": 1}
 
     def test_to_OrderedDict(self):
-        assert User(id=1, name="Alice").to_OrderedDict(include_null=True) == \
-               OrderedDict([
-                   ("id", 1), ("name", "Alice"),
-               ])
+        assert User(id=1, name="Alice").to_OrderedDict(
+            include_null=True
+        ) == OrderedDict(
+            [
+                ("id", 1),
+                ("name", "Alice"),
+            ]
+        )
 
-        assert User(id=1).to_OrderedDict(include_null=True) == \
-               OrderedDict([
-                   ("id", 1), ("name", None),
-               ])
-        assert User(id=1).to_OrderedDict(include_null=False) == \
-               OrderedDict([
-                   ("id", 1),
-               ])
+        assert User(id=1).to_OrderedDict(include_null=True) == OrderedDict(
+            [
+                ("id", 1),
+                ("name", None),
+            ]
+        )
+        assert User(id=1).to_OrderedDict(include_null=False) == OrderedDict(
+            [
+                ("id", 1),
+            ]
+        )
 
-        assert User(name="Alice").to_OrderedDict(include_null=True) == \
-               OrderedDict([
-                   ("id", None), ("name", "Alice"),
-               ])
-        assert User(name="Alice").to_OrderedDict(include_null=False) == \
-               OrderedDict([
-                   ("name", "Alice"),
-               ])
+        assert User(name="Alice").to_OrderedDict(include_null=True) == OrderedDict(
+            [
+                ("id", None),
+                ("name", "Alice"),
+            ]
+        )
+        assert User(name="Alice").to_OrderedDict(include_null=False) == OrderedDict(
+            [
+                ("name", "Alice"),
+            ]
+        )
 
     def test_glance(self):
         user = User(id=1, name="Alice")
@@ -99,7 +109,10 @@ class TestExtendedBaseOOP:
         assert User(id=1).id_field_value() == 1
 
         assert Association.pk_names() == ("x_id", "y_id")
-        assert tuple([field.name for field in Association.pk_fields()]) == ("x_id", "y_id")
+        assert tuple([field.name for field in Association.pk_fields()]) == (
+            "x_id",
+            "y_id",
+        )
         assert Association(x_id=1, y_id=2).pk_values() == (1, 2)
 
         with raises(ValueError):
@@ -115,4 +128,6 @@ class TestExtendedBaseOOP:
 if __name__ == "__main__":
     from sqlalchemy_mate.tests import run_cov_test
 
-    run_cov_test(__file__, "sqlalchemy_mate.orm.extended_declarative_base", preview=False)
+    run_cov_test(
+        __file__, "sqlalchemy_mate.orm.extended_declarative_base", preview=False
+    )

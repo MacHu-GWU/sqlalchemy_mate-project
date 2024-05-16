@@ -3,8 +3,12 @@
 import pytest
 
 from sqlalchemy_mate import io
-from sqlalchemy_mate.tests import (
-    IS_WINDOWS, engine_sqlite, engine_psql, t_user, BaseTest,
+from sqlalchemy_mate.tests.api import (
+    IS_WINDOWS,
+    engine_sqlite,
+    engine_psql,
+    t_user,
+    BaseCrudTest,
 )
 
 
@@ -18,7 +22,7 @@ def teardown_module(module):
         pass
 
 
-class DataIOTestBase(BaseTest):
+class DataIOTestBase(BaseCrudTest):
     @classmethod
     def class_level_data_setup(cls):
         with cls.engine.connect() as connection:
@@ -48,6 +52,6 @@ class TestDataIOPostgres(DataIOTestBase):
 
 
 if __name__ == "__main__":
-    from sqlalchemy_mate.tests import run_cov_test
+    from sqlalchemy_mate.tests.helper import run_cov_test
 
     run_cov_test(__file__, "sqlalchemy_mate.io", preview=False)

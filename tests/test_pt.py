@@ -8,7 +8,7 @@ import sqlalchemy.orm as orm
 from prettytable import PrettyTable
 
 from sqlalchemy_mate import pt, selecting
-from sqlalchemy_mate.tests import (
+from sqlalchemy_mate.tests.api import (
     IS_WINDOWS,
     engine_sqlite,
     engine_psql,
@@ -16,11 +16,11 @@ from sqlalchemy_mate.tests import (
     t_inv,
     User,
     Association,
-    BaseTest,
+    BaseCrudTest,
 )
 
 
-class PrettyTableTestBase(BaseTest):
+class PrettyTableTestBase(BaseCrudTest):
     @classmethod
     def class_level_data_setup(cls):
         cls.delete_all_data_in_core_table()
@@ -46,7 +46,7 @@ class PrettyTableTestBase(BaseTest):
             connection.execute(sa.insert(t_user), t_user_data)
             connection.execute(t_inv.insert(), t_inv_data)
             connection.commit()
-        
+
         with orm.Session(cls.engine) as ses:
             ses.add_all(
                 [
@@ -65,7 +65,7 @@ class PrettyTableTestBase(BaseTest):
             )
             ses.commit()
 
-    def _test_get_headers(self):
+    def test_get_headers(self):
         with orm.Session(self.eng) as ses:
             user = ses.get(User, 1)
             keys, values = pt.get_keys_values(user)
@@ -78,7 +78,7 @@ class PrettyTableTestBase(BaseTest):
             assert keys == ["user_id", "name"]
             assert values == [1, "Alice"]
 
-    def _test_from_result(self):
+    def test_from_result(self):
         with orm.Session(self.eng) as ses:
             res = ses.scalars(sa.select(User))
             ptable = pt.from_result(res)
@@ -89,7 +89,7 @@ class PrettyTableTestBase(BaseTest):
             ptable = pt.from_result(res)
             assert len(ptable._rows) == 4
 
-    def _test_from_text_clause(self):
+    def test_from_text_clause(self):
         stmt = sa.text(f"SELECT * FROM {t_user.name} LIMIT 2")
         tb = pt.from_text_clause(stmt, self.eng)
         assert isinstance(tb, PrettyTable)
@@ -102,7 +102,7 @@ class PrettyTableTestBase(BaseTest):
         assert isinstance(tb, PrettyTable)
         assert len(tb._rows) == 1
 
-    def _test_from_stmt(self):
+    def test_from_stmt(self):
         stmt = sa.select(t_inv)
         tb = pt.from_stmt(stmt, self.eng)
         assert isinstance(tb, PrettyTable)
@@ -124,7 +124,7 @@ class PrettyTableTestBase(BaseTest):
         assert isinstance(tb, PrettyTable)
         assert len(tb._rows) == 2
 
-    def _test_from_table(self):
+    def test_from_table(self):
         tb = pt.from_table(t_inv, self.eng, limit=10)
         assert isinstance(tb, PrettyTable)
         assert len(tb._rows) == 6
@@ -133,7 +133,7 @@ class PrettyTableTestBase(BaseTest):
         assert isinstance(tb, PrettyTable)
         assert len(tb._rows) == 3
 
-    def _test_from_model(self):
+    def test_from_model(self):
         tb = pt.from_model(Association, self.eng, limit=2)
         assert isinstance(tb, PrettyTable)
         assert len(tb._rows) == 2
@@ -143,14 +143,14 @@ class PrettyTableTestBase(BaseTest):
             assert isinstance(tb, PrettyTable)
             assert len(tb._rows) == 2
 
-    def _test_from_data(self):
+    def test_from_data(self):
         with self.eng.connect() as connection:
             rows = [row._asdict() for row in connection.execute(sa.select(t_user))]
             tb = pt.from_dict_list(rows)
             assert isinstance(tb, PrettyTable)
             assert len(tb._rows) == 4
 
-    def _test_from_everything(self):
+    def test_from_everything(self):
         t = sa.text(f"SELECT * FROM {t_user.name} LIMIT 2")
         stmt = sa.select(t_user)
         table = t_inv
@@ -176,16 +176,6 @@ class PrettyTableTestBase(BaseTest):
         with pytest.raises(Exception):
             pt.from_everything(None)
 
-    def test(self):
-        self._test_get_headers()
-        self._test_from_result()
-        self._test_from_text_clause()
-        self._test_from_stmt()
-        self._test_from_table()
-        self._test_from_model()
-        self._test_from_data()
-        self._test_from_everything()
-
 
 class TestPrettyTableSqlite(PrettyTableTestBase):
     engine = engine_sqlite
@@ -200,6 +190,6 @@ class TestPrettyTablePostgres(PrettyTableTestBase):
 
 
 if __name__ == "__main__":
-    from sqlalchemy_mate.tests import run_cov_test
+    from sqlalchemy_mate.tests.helper import run_cov_test
 
     run_cov_test(__file__, "sqlalchemy_mate.pt", preview=False)

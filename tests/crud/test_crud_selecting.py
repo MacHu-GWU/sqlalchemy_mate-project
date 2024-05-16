@@ -3,18 +3,18 @@
 import pytest
 
 from sqlalchemy_mate.crud import selecting
-from sqlalchemy_mate.tests import (
+from sqlalchemy_mate.tests.api import (
     IS_WINDOWS,
     engine_sqlite,
     engine_psql,
     t_user,
     t_inv,
     t_smart_insert,
-    BaseTest,
+    BaseCrudTest,
 )
 
 
-class SelectingApiBaseTest(BaseTest):
+class SelectingApiBaseTest(BaseCrudTest):
     @classmethod
     def class_level_data_setup(cls):
         cls.delete_all_data_in_core_table()
@@ -225,6 +225,6 @@ class TestSelectingApiPostgres(SelectingApiBaseTest):
 
 
 if __name__ == "__main__":
-    from sqlalchemy_mate.tests import run_cov_test
+    from sqlalchemy_mate.tests.helper import run_cov_test
 
     run_cov_test(__file__, "sqlalchemy_mate.crud.selecting", preview=False)
