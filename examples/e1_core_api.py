@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import sqlalchemy as sa
-import sqlalchemy_mate as sam
+import sqlalchemy_mate.api as sam
 
 metadata = sa.MetaData()
 

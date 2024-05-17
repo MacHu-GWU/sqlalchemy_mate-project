@@ -115,7 +115,7 @@ code:
 
 .. code-block:: python
 
-    from sqlalchemy_mate import EngineCreator
+    from sqlalchemy_mate.api import EngineCreator
 
     ec = EngineCreator.from_json(
         json_file="path-to-json-file",
@@ -149,7 +149,7 @@ You can put lots of database connection info in a ``.db.json`` file in your ``$H
 
 .. code-block:: python
 
-    from sqlalchemy_mate import EngineCreator
+    from sqlalchemy_mate.api import EngineCreator
 
     ec = EngineCreator.from_home_db_json(identifier="db1")
     engine = ec.create_postgresql_psycopg2()
@@ -179,7 +179,7 @@ This is similar to ``from_json``, but the json file is stored on AWS S3.
 
 .. code-block:: python
 
-    from sqlalchemy_mate import EngineCreator
+    from sqlalchemy_mate.api import EngineCreator
     ec = EngineCreator.from_s3_json(
         bucket_name="my-bucket", key="db.json",
         json_path="identifier1",
@@ -203,7 +203,7 @@ You can put your credentials in Environment Variable. For example:
 
 .. code-block:: python
 
-    from sqlalchemy_mate import EngineCreator
+    from sqlalchemy_mate.api import EngineCreator
     # read from DB_DEV_USERNAME, DB_DEV_PASSWORD, ...
     ec = EngineCreator.from_env(prefix="DB_DEV")
     engine = ec.create_redshift()
@@ -239,7 +239,7 @@ With sql expression:
 
 .. code-block:: python
 
-    from sqlalchemy_mate import inserting
+    from sqlalchemy_mate.api import inserting
     engine = create_engine(...)
     t_users = Table(
         "users", metadata,
@@ -256,7 +256,7 @@ With ORM:
 
 .. code-block:: python
 
-    from sqlalchemy_mate import ExtendedBase
+    from sqlalchemy_mate.api import ExtendedBase
     Base = declarative_base()
     class User(Base, ExtendedBase): # inherit from ExtendedBase
         ...
@@ -274,7 +274,7 @@ Automatically update value by primary key.
 .. code-block:: python
 
     # in SQL expression
-    from sqlalchemy_mate import updating
+    from sqlalchemy_mate.api import updating
 
     data = [{"id": 1, "name": "Alice}, {"id": 2, "name": "Bob"}, ...]
     updating.update_all(engine, table, data)

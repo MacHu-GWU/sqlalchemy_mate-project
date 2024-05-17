@@ -12,7 +12,7 @@ User Friendly Engine Creator
 
 .. code-block:: python
 
-    import sqlalchemy_mate as sam
+    import sqlalchemy_mate.api as sam
 
     # An Postgres DB example
     # First, you use EngineCreator class to create the db connection specs
@@ -48,7 +48,7 @@ First let's insert some sample data:
 
     import sqlalchemy as sa
     from sqlalchemy.orm import declarative_base
-    import sqlalchemy_mate as sam
+    import sqlalchemy_mate.api as sam
 
     Base = declarative_base()
 
@@ -81,7 +81,7 @@ First let's insert some sample data:
 
 .. code-block:: python
 
-    import sqlalchemy_mate as sam
+    import sqlalchemy_mate.api as sam
 
     # from ORM class
     print(sam.pt.from_everything(User, engine))

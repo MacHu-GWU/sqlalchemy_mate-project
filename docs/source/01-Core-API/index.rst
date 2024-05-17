@@ -44,7 +44,7 @@ We want to insert 3 random user data into the database and do some basic query:
 
 .. code-block:: python
 
-    import sqlalchemy_mate as sam
+    import sqlalchemy_mate.api as sam
 
     # do bulk insert
     sam.inserting.smart_insert(engine, t_users, user_data_list)

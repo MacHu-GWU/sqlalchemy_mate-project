@@ -2,7 +2,7 @@
 
 import sqlalchemy as sa
 from sqlalchemy.orm import declarative_base
-import sqlalchemy_mate as sam
+import sqlalchemy_mate.api as sam
 
 Base = declarative_base()
 

@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 
-
 import typing as T
-import enum
 import uuid
 import traceback
 import dataclasses
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime
 
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
@@ -17,15 +15,31 @@ EPOCH = datetime(1970, 1, 1)
 
 
 class JobLockedError(Exception):
+    """
+    Raised when try to start a locked job.
+    """
+
     pass
 
 
 class JobIgnoredError(Exception):
+    """
+    Raised when try to start a ignored (failed too many times) job.
+    """
+
     pass
 
 
 class JobMixin:
     """
+    The sqlalchemy ORM data model mixin class that brings in status tracking
+    related features. Core API includes:
+
+    - :meth:`JobMixin.create`
+    - :meth:`JobMixin.create_and_save`
+    - :meth:`JobMixin.start`
+    - :meth:`JobMixin.query_by_status`
+
     See: https://docs.sqlalchemy.org/en/20/orm/declarative_mixins.html
 
     **锁机制**
@@ -66,6 +80,18 @@ class JobMixin:
         data: T.Optional[dict] = None,
         **kwargs,
     ):
+        """
+        Create an in-memory instance of the job object. This method won't write
+        the job to database. This is useful for initializing many new jobs in batch.
+
+        Usage example::
+
+            with orm.Session(engine) as ses:
+                for job_id in job_id_list:
+                    job = Job.create(id=job_id, status=10)
+                    ses.add(job)
+                ses.commit()
+        """
         utc_now = datetime.utcnow()
         return cls(
             id=id,
@@ -103,6 +129,14 @@ class JobMixin:
         data: T.Optional[dict] = None,
         **kwargs,
     ):
+        """
+        Create an instance of the job object and write the job to database.
+
+        Usage example::
+
+            with orm.Session(engine) as ses:
+                Job.create_and_save(ses, id="job-1", status=10)
+        """
         if isinstance(engine_or_session, sa.Engine):
             with orm.Session(engine_or_session) as ses:
                 return cls._create_and_save(
@@ -224,6 +258,36 @@ class JobMixin:
         debug: bool = False,
     ) -> T.ContextManager[T.Tuple["T_JOB", "Updates"]]:
         """
+        This is the most important API. A context manager that does a lot of things:
+
+        1. Try to obtain lock before the job begin. Once we have obtained the lock,
+            other work won't be able to update this row (they will see that it is locked).
+        2. Any raised exception will be captured by the context manager, and it will
+            set the status as failed, add retry count, log the error
+            (and save the error information to DB), and release the lock.
+        3. If the job has been failed too many times, it will set the status as ``ignored``.
+        4. If everything goes well, it will set status as ``succeeded`` and apply updates.
+
+        Usage example::
+
+            with Job.start(
+                engine=engine,
+                id="job-1",
+                in_process_status=20,
+                failed_status=30,
+                success_status=40,
+                ignore_status=50,
+                expire=900, # concurrency lock will expire in 15 minutes,
+                max_retry=3,
+                debug=True,
+            ) as (job, updates):
+                # do your job logic here
+                ...
+                # you can use ``updates.set(...)`` method to specify
+                # what you would like to update at the end of the job
+                # if the job succeeded.
+                updates.set(key="data", value={"version": 1})
+
         :param engine: SQLAlchemy engine. A life-cycle of a job has to be done
             in a new session.
         """
@@ -333,6 +397,15 @@ class JobMixin:
         limit: int = 10,
         older_task_first: bool = True,
     ) -> T.List["T_JOB"]:
+        """
+        Query job by status.
+
+        :param engine_or_session:
+        :param status: desired status code
+        :param limit: number of jobs to return
+        :param older_task_first: if True, then return older task
+        (older update_at time) first.
+        """
         if isinstance(engine_or_session, sa.Engine):
             with orm.Session(engine_or_session) as ses:
                 job_list = cls._query_by_status(
@@ -364,9 +437,19 @@ disallowed_cols = {
 
 @dataclasses.dataclass
 class Updates:
+    """
+    A helper class that hold the key value you want to update at the end of the
+    job if the job succeeded.
+    """
+
     values: dict = dataclasses.field(default_factory=dict)
 
     def set(self, key: str, value: T.Any):
+        """
+        Use this method to set "to-update" data. Note that you should not
+        update some columns like "id", "status", "update_at" yourself,
+        it will be updated by the :meth:`JobMixin.start` context manager.
+        """
         if key in disallowed_cols:  # pragma: no cover
             raise KeyError(f"You should NOT set {key!r} column yourself!")
         self.values[key] = value

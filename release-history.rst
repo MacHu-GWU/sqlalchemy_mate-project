@@ -15,12 +15,23 @@ Backlog (TODO)
 **Miscellaneous**
 
 
-2.0.0.0 (TODO)
+2.0.0.1 (TODO)
+------------------------------------------------------------------------------
+**💥Breaking Change**
+
+- Rework the public API import. Now you have to use ``import sqlalchemy_mate.api as sm`` to access the public API. ``from sqlalchemy_mate import ...`` is no longer working.
+
+**Features and Improvements**
+
+- Add status tracker pattern.
+
+
+2.0.0.0 (2024-05-15)
 ------------------------------------------------------------------------------
 **💥Breaking Change**
 
 - From ``sqlalchemy_mate>=2.0.0.0``, it only support ``sqlalchemy>=2.0.0`` and only compatible with sqlalchemy 2.X API. Everything marked as ``no longer supported`` or ``no longer accepted`` in `SQLAlchemy 2.0 - Major Migration Guide <https://docs.sqlalchemy.org/en/20/changelog/migration_20.html#migration-core-connection-transaction>`_ document will no longer be supported from this version.
-- Drop Python3.7 support.
+- Drop Python3.7 support. Now it only support 3.8+.
 
 **Features and Improvements**
 

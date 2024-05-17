@@ -12,7 +12,7 @@ Extended Declarative Base
 
     import sqlalchemy as sa
     import sqlalchemy.orm as orm
-    import sqlalchemy_mate as sam
+    import sqlalchemy_mate.api as sam
 
     Base = orm.declarative_base()
 
