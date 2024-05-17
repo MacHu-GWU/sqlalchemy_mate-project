@@ -1,7 +1,7 @@
-orm
-===
+status_tracker
+==============
 
-.. automodule:: sqlalchemy_mate.orm
+.. automodule:: sqlalchemy_mate.patterns.status_tracker
     :members:
 
 sub packages and modules
@@ -11,5 +11,5 @@ sub packages and modules
     :maxdepth: 1
 
     api <api>
-    extended_declarative_base <extended_declarative_base>
+    impl <impl>
     

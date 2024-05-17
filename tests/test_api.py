@@ -34,8 +34,13 @@ def test():
     _ = sm.pt.from_dict_list
     _ = sm.pt.from_everything
 
+    _ = sm.patterns.status_tracker.JobLockedError
+    _ = sm.patterns.status_tracker.JobIgnoredError
+    _ = sm.patterns.status_tracker.JobMixin
+    _ = sm.patterns.status_tracker.Updates
+
 
 if __name__ == "__main__":
     from sqlalchemy_mate.tests.api import run_cov_test
 
-    run_cov_test(__file__, "sqlalchemy_mate.io", preview=False)
+    run_cov_test(__file__, "sqlalchemy_mate.api", preview=False)

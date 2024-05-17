@@ -18,3 +18,4 @@ from .crud import updating_api as updating
 from .crud import deleting_api as deleting
 from .orm.api import ExtendedBase
 from .vendor.timeout_decorator import TimeoutError
+from .patterns import api as patterns
