@@ -15,11 +15,42 @@ Backlog (TODO)
 **Miscellaneous**
 
 
-2.0.0.1 (TODO)
+2.0.0.1 (2024-05-17)
 ------------------------------------------------------------------------------
 **💥Breaking Change**
 
-- Rework the public API import. Now you have to use ``import sqlalchemy_mate.api as sm`` to access the public API. ``from sqlalchemy_mate import ...`` is no longer working.
+- Rework the public API import. Now you have to use ``import sqlalchemy_mate.api as sam`` to access the public API. ``from sqlalchemy_mate import ...`` is no longer working. Here's the full list of public API:
+    - ``sqlalchemy_mate.api.selecting.count_row``
+    - ``sqlalchemy_mate.api.selecting.by_pk``
+    - ``sqlalchemy_mate.api.selecting.select_all``
+    - ``sqlalchemy_mate.api.selecting.select_single_column``
+    - ``sqlalchemy_mate.api.selecting.select_many_column``
+    - ``sqlalchemy_mate.api.selecting.select_single_distinct``
+    - ``sqlalchemy_mate.api.selecting.select_many_distinct``
+    - ``sqlalchemy_mate.api.selecting.select_random``
+    - ``sqlalchemy_mate.api.selecting.yield_tuple``
+    - ``sqlalchemy_mate.api.selecting.yield_dict``
+    - ``sqlalchemy_mate.api.inserting.smart_insert``
+    - ``sqlalchemy_mate.api.updating.update_all``
+    - ``sqlalchemy_mate.api.updating.upsert_all``
+    - ``sqlalchemy_mate.api.deleting.delete_all``
+    - ``sqlalchemy_mate.api.test_connection``
+    - ``sqlalchemy_mate.api.EngineCreator``
+    - ``sqlalchemy_mate.api.ExtendedBase``
+    - ``sqlalchemy_mate.api.TimeoutError``
+    - ``sqlalchemy_mate.api.io.sql_to_csv``
+    - ``sqlalchemy_mate.api.io.table_to_csv``
+    - ``sqlalchemy_mate.api.pt.from_result``
+    - ``sqlalchemy_mate.api.pt.from_text_clause``
+    - ``sqlalchemy_mate.api.pt.from_stmt``
+    - ``sqlalchemy_mate.api.pt.from_table``
+    - ``sqlalchemy_mate.api.pt.from_model``
+    - ``sqlalchemy_mate.api.pt.from_dict_list``
+    - ``sqlalchemy_mate.api.pt.from_everything``
+    - ``sqlalchemy_mate.api.patterns.status_tracker.JobLockedError``
+    - ``sqlalchemy_mate.api.patterns.status_tracker.JobIgnoredError``
+    - ``sqlalchemy_mate.api.patterns.status_tracker.JobMixin``
+    - ``sqlalchemy_mate.api.patterns.status_tracker.Updates``
 
 **Features and Improvements**
 
