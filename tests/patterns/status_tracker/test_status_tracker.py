@@ -6,7 +6,11 @@ import pytest
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 
-from sqlalchemy_mate.tests.api import engine_psql as engine
+from sqlalchemy_mate.tests.api import (
+    IS_WINDOWS,
+    engine_sqlite,
+    engine_psql,
+)
 from sqlalchemy_mate.patterns.status_tracker.impl import (
     JobLockedError,
     JobIgnoredError,
@@ -32,6 +36,7 @@ class Job(Base, JobMixin):
     @classmethod
     def start_job(
         cls,
+        engine: sa.Engine,
         id: str,
         skip_error: bool = False,
         debug: bool = False,
@@ -50,8 +55,6 @@ class Job(Base, JobMixin):
         )
 
 
-Base.metadata.create_all(engine)
-
 job_id = "job-1"
 
 
@@ -59,14 +62,20 @@ class MyError(Exception):
     pass
 
 
-class TestJob:
+class StatusTrackerBaseTest:
+    engine: sa.Engine = None
+
+    @classmethod
+    def setup_class(cls):
+        Base.metadata.create_all(cls.engine)
+
     def setup_method(self):
-        with engine.connect() as conn:
+        with self.engine.connect() as conn:
             conn.execute(Job.__table__.delete())
             conn.commit()
 
     def get_job(self):
-        with orm.Session(engine) as ses:
+        with orm.Session(self.engine) as ses:
             return ses.get(Job, job_id)
 
     def test_create(self):
@@ -76,56 +85,74 @@ class TestJob:
 
     def test_create_and_save(self):
         job = Job.create_and_save(
-            id=job_id, status=StatusEnum.pending.value, engine=engine
+            id=job_id,
+            status=StatusEnum.pending.value,
+            engine=self.engine,
         )
         job = self.get_job()
         assert isinstance(job, Job)
 
     def test_lock_it(self):
+        # create a new job
         job = Job.create_and_save(
             id=job_id,
             status=StatusEnum.pending.value,
-            engine=engine,
+            engine=self.engine,
         )
+
+        # then get the job from db, it should NOT be locked
         job = self.get_job()
         assert job.is_locked(expire=10) is False
-        job.lock_it(
-            engine_or_session=engine,
-            in_progress_status=StatusEnum.in_progress.value,
-            debug=True,
-        )
-        job = self.get_job()
 
-        assert job.is_locked(expire=10) is True
+        # then lock it, the in-memory job object should be locked
+        job.lock_it(
+            engine_or_session=self.engine,
+            in_progress_status=StatusEnum.in_progress.value,
+        )
         assert job.status == StatusEnum.in_progress.value
+        assert job.lock is not None
+        assert job.is_locked(expire=10) is True
+
+        # then get the job from db, it should be locked
+        job = self.get_job()
+        assert job.status == StatusEnum.in_progress.value
+        assert job.lock is not None
+        assert job.is_locked(expire=10) is True
 
     def test_update(self):
         Job.create_and_save(
             id=job_id,
             status=StatusEnum.pending.value,
-            engine=engine,
+            engine=self.engine,
         )
 
         job = Job.create(id=job_id, status=StatusEnum.pending.value)
         updates = Updates()
         updates.set(key="data", value={"version": 1})
-        job.update(engine_or_session=engine, updates=updates)
+        job.update(engine_or_session=self.engine, updates=updates)
 
         job = self.get_job()
         assert job.data == {"version": 1}
 
     def _create_and_save_for_start(self):
+        """
+        Create an initial job so that we can test the ``start(...)`` method.
+        """
         Job.create_and_save(
             id=job_id,
             status=StatusEnum.pending.value,
             data={"version": 1},
-            engine=engine,
+            engine=self.engine,
         )
 
     def test_start_and_succeeded(self):
         self._create_and_save_for_start()
-        with Job.start_job(id=job_id, debug=True) as (job, updates):
+        with Job.start_job(engine=self.engine, id=job_id, debug=False) as (
+            job,
+            updates,
+        ):
             updates.set(key="data", value={"version": job.data["version"] + 1})
+
         job = self.get_job()
         assert job.status == StatusEnum.succeeded.value
         assert job.lock == None
@@ -135,7 +162,10 @@ class TestJob:
     def test_start_and_failed(self):
         self._create_and_save_for_start()
         with pytest.raises(MyError):
-            with Job.start_job(id=job_id, debug=True) as (job, updates):
+            with Job.start_job(engine=self.engine, id=job_id, debug=False) as (
+                job,
+                updates,
+            ):
                 updates.set(key="data", value={"version": job.data["version"] + 1})
                 raise MyError
         job = self.get_job()
@@ -146,13 +176,19 @@ class TestJob:
 
     def test_start_and_ignored(self):
         self._create_and_save_for_start()
-        with Job.start_job(id=job_id, skip_error=True, debug=True) as (job, updates):
+        with Job.start_job(
+            engine=self.engine, id=job_id, skip_error=True, debug=False
+        ) as (job, updates):
             updates.set(key="data", value={"version": job.data["version"] + 1})
             raise Exception
-        with Job.start_job(id=job_id, skip_error=True, debug=True) as (job, updates):
+        with Job.start_job(
+            engine=self.engine, id=job_id, skip_error=True, debug=False
+        ) as (job, updates):
             updates.set(key="data", value={"version": job.data["version"] + 1})
             raise Exception
-        with Job.start_job(id=job_id, skip_error=True, debug=True) as (job, updates):
+        with Job.start_job(
+            engine=self.engine, id=job_id, skip_error=True, debug=False
+        ) as (job, updates):
             updates.set(key="data", value={"version": job.data["version"] + 1})
             raise Exception
         job = self.get_job()
@@ -162,7 +198,9 @@ class TestJob:
         # print(job.__dict__)
 
         with pytest.raises(JobIgnoredError):
-            with Job.start_job(id=job_id, skip_error=True, debug=True) as (
+            with Job.start_job(
+                engine=self.engine, id=job_id, skip_error=True, debug=False
+            ) as (
                 job,
                 updates,
             ):
@@ -170,16 +208,18 @@ class TestJob:
 
     def test_start_and_concurrent_worker_conflict(self):
         self._create_and_save_for_start()
-        with Job.start_job(id=job_id, debug=True) as (job1, updates1):
-            print("first worker start the job")
+        with Job.start_job(engine=self.engine, id=job_id, debug=False) as (
+            job1,
+            updates1,
+        ):
             with pytest.raises(JobLockedError):
-                with Job.start_job(id=job_id, skip_error=True, debug=True) as (
+                with Job.start_job(engine=self.engine, id=job_id, debug=False) as (
                     job2,
                     updates2,
                 ):
-                    print("second worker start the job")
                     updates2.set(
-                        key="data", value={"version": job2.data["version"] + 100}
+                        key="data",
+                        value={"version": job2.data["version"] + 100},
                     )
             updates1.set(key="data", value={"version": job1.data["version"] + 1})
 
@@ -188,6 +228,43 @@ class TestJob:
         assert job.lock == None
         assert job.data == {"version": 2}
         # print(job.__dict__)
+
+    def test_query_by_status(self):
+        self._create_and_save_for_start()
+
+        job_list = Job.query_by_status(
+            engine_or_session=self.engine,
+            status=StatusEnum.pending.value,
+        )
+        assert len(job_list) == 1
+        assert job_list[0].id == job_id
+
+        with orm.Session(self.engine) as ses:
+            job_list = Job.query_by_status(
+                engine_or_session=ses,
+                status=StatusEnum.pending.value,
+            )
+        assert len(job_list) == 1
+        assert job_list[0].id == job_id
+
+
+class TestSqlite(StatusTrackerBaseTest):
+    engine = engine_sqlite
+
+
+@pytest.mark.skipif(
+    IS_WINDOWS,
+    reason="no psql service container for windows",
+)
+class TestPsql(StatusTrackerBaseTest):  # pragma: no cover
+    engine = engine_psql
+
+
+class TestUpdates:
+    def test(self):
+        updates = Updates()
+        with pytest.raises(KeyError):
+            updates.set(key="status", value=0)
 
 
 if __name__ == "__main__":

@@ -111,7 +111,7 @@ class JobMixin:
         in_progress_status: int,
         debug: bool = False,
     ) -> T.Tuple[str, datetime]:
-        if debug:
+        if debug:  # pragma: no cover
             print(
                 f"🔓Try to set status = {in_progress_status} and lock the job {self.id!r} ..."
             )
@@ -121,17 +121,20 @@ class JobMixin:
         stmt = (
             sa.update(klass)
             .where(klass.id == self.id, klass.lock == None)
-            .values(lock=lock, lock_at=utc_now, status=in_progress_status)
+            .values(status=in_progress_status, lock=lock, lock_at=utc_now)
         )
         res = ses.execute(stmt)
         ses.commit()
         if res.rowcount == 1:
-            if debug:
+            self.status = in_progress_status
+            self.lock = lock
+            self.lock_at = utc_now
+            if debug:  # pragma: no cover
                 print("  Successfully lock the job!")
         else:
-            if debug:
+            if debug:  # pragma: no cover
                 print("  Failed to lock the job")
-            raise JobLockedError
+            raise JobLockedError(f"Job {self.id!r}")
         return lock, utc_now
 
     def lock_it(
@@ -191,21 +194,27 @@ class JobMixin:
         skip_error: bool = False,
         debug: bool = False,
     ) -> T.ContextManager[T.Tuple["T_JOB", "Updates"]]:
-        if debug:
+        """
+        :param engine: SQLAlchemy engine. A life-cycle of a job has to be done
+            in a new session.
+        """
+        if debug:  # pragma: no cover
             print("{msg:-^80}".format(msg=(f" ▶️ start Job {id!r}")))
 
         updates = Updates()
 
         with orm.Session(engine) as ses:
             job = ses.get(cls, id)
-            if job is None: # pragma: no cover
+            if job is None:  # pragma: no cover
                 raise ValueError
 
             if job.is_locked(expire=expire):
+                if debug:  # pragma: no cover
+                    print(f"Job {id!r} is locked.")
                 raise JobLockedError(f"Job {id!r} is locked.")
 
             if job.status == ignore_status:
-                if debug:
+                if debug:  # pragma: no cover
                     print(f"↪️ the job is ignored, do nothing!")
                 raise JobIgnoredError(
                     f"Job {id!r} retry count already exceeded {max_retry}, "
@@ -223,7 +232,7 @@ class JobMixin:
                 # print("before yield")
                 yield job, updates
                 # print("after yield")
-                if debug:
+                if debug:  # pragma: no cover
                     print(
                         f"✅ 🔐 job succeeded, "
                         f"set status = {success_status} and unlock the job."
@@ -237,14 +246,14 @@ class JobMixin:
                 # print("before error handling")
                 failed_updates = Updates()
                 if job.retry + 1 >= max_retry:
-                    if debug:
+                    if debug:  # pragma: no cover
                         print(
                             f"❌ 🔐 job failed {max_retry} times already, "
                             f"set status = {ignore_status} and unlock the job."
                         )
                     failed_updates.values["status"] = ignore_status
                 else:
-                    if debug:
+                    if debug:  # pragma: no cover
                         print(
                             f"❌ 🔐 job failed, "
                             f"set status = {failed_status} and unlock the job."
@@ -262,7 +271,7 @@ class JobMixin:
                 if skip_error is False:
                     raise e
             finally:
-                if debug:
+                if debug:  # pragma: no cover
                     status = updates.values["status"]
                     print(
                         "{msg:-^80}".format(
@@ -270,6 +279,44 @@ class JobMixin:
                         )
                     )
                 # print("before finally")
+
+    @classmethod
+    def _query_by_status(
+        cls,
+        ses: orm.Session,
+        status: int,
+        limit: int = 10,
+        older_task_first: bool = True,
+    ) -> T.List["T_JOB"]:
+        where_clauses = list()
+        where_clauses.append(cls.status == status)
+        stmt = sa.select(cls).where(cls.status == status)
+        if older_task_first:
+            stmt = stmt.order_by(sa.asc(cls.update_at))
+        stmt = stmt.limit(limit)
+        return ses.scalars(stmt).all()
+
+    @classmethod
+    def query_by_status(
+        cls,
+        engine_or_session: T.Union[sa.Engine, orm.Session],
+        status: int,
+        limit: int = 10,
+        older_task_first: bool = True,
+    ) -> T.List["T_JOB"]:
+        if isinstance(engine_or_session, sa.Engine):
+            with orm.Session(engine_or_session) as ses:
+                job_list = cls._query_by_status(
+                    ses, status=status, limit=limit, older_task_first=older_task_first
+                )
+        else:
+            job_list = cls._query_by_status(
+                engine_or_session,
+                status=status,
+                limit=limit,
+                older_task_first=older_task_first,
+            )
+        return job_list
 
 
 T_JOB = T.TypeVar("T_JOB", bound=JobMixin)
@@ -291,6 +338,6 @@ class Updates:
     values: dict = dataclasses.field(default_factory=dict)
 
     def set(self, key: str, value: T.Any):
-        if key in disallowed_cols: # pragma: no cover
+        if key in disallowed_cols:  # pragma: no cover
             raise KeyError(f"You should NOT set {key!r} column yourself!")
         self.values[key] = value
