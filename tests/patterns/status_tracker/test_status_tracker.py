@@ -29,8 +29,10 @@ class StatusEnum(int, enum.Enum):
 
 Base = orm.declarative_base()
 
+from sqlalchemy_mate.orm.extended_declarative_base import ExtendedBase
 
-class Job(Base, JobMixin):
+
+class Job(Base, ExtendedBase, JobMixin):
     __tablename__ = "jobs"
 
     @classmethod
@@ -84,20 +86,23 @@ class StatusTrackerBaseTest:
         assert job is None
 
     def test_create_and_save(self):
-        job = Job.create_and_save(
-            id=job_id,
-            status=StatusEnum.pending.value,
-            engine=self.engine,
-        )
+        with orm.Session(self.engine) as ses:
+            job = Job.create_and_save(
+                engine_or_session=ses,
+                id=job_id,
+                status=StatusEnum.pending.value,
+            )
+            assert job.data == None
+
         job = self.get_job()
         assert isinstance(job, Job)
 
     def test_lock_it(self):
         # create a new job
         job = Job.create_and_save(
+            engine_or_session=self.engine,
             id=job_id,
             status=StatusEnum.pending.value,
-            engine=self.engine,
         )
 
         # then get the job from db, it should NOT be locked
@@ -121,9 +126,9 @@ class StatusTrackerBaseTest:
 
     def test_update(self):
         Job.create_and_save(
+            engine_or_session=self.engine,
             id=job_id,
             status=StatusEnum.pending.value,
-            engine=self.engine,
         )
 
         job = Job.create(id=job_id, status=StatusEnum.pending.value)
@@ -139,10 +144,10 @@ class StatusTrackerBaseTest:
         Create an initial job so that we can test the ``start(...)`` method.
         """
         Job.create_and_save(
+            engine_or_session=self.engine,
             id=job_id,
             status=StatusEnum.pending.value,
             data={"version": 1},
-            engine=self.engine,
         )
 
     def test_start_and_succeeded(self):

@@ -81,19 +81,45 @@ class JobMixin:
         )
 
     @classmethod
-    def create_and_save(
+    def _create_and_save(
         cls,
-        engine: sa.Engine,
+        ses: orm.Session,
         id: str,
         status: int,
         data: T.Optional[dict] = None,
         **kwargs,
     ):
         job = cls.create(id=id, status=status, data=data, **kwargs)
-        with orm.Session(engine) as ses:
-            ses.add(job)
-            ses.commit()
+        ses.add(job)
+        ses.commit()
         return job
+
+    @classmethod
+    def create_and_save(
+        cls,
+        engine_or_session: T.Union[sa.Engine, orm.Session],
+        id: str,
+        status: int,
+        data: T.Optional[dict] = None,
+        **kwargs,
+    ):
+        if isinstance(engine_or_session, sa.Engine):
+            with orm.Session(engine_or_session) as ses:
+                return cls._create_and_save(
+                    ses=ses,
+                    id=id,
+                    status=status,
+                    data=data,
+                    **kwargs,
+                )
+        else:
+            return cls._create_and_save(
+                ses=engine_or_session,
+                id=id,
+                status=status,
+                data=data,
+                **kwargs,
+            )
 
     def is_locked(self, expire: int) -> bool:
         """
@@ -143,6 +169,9 @@ class JobMixin:
         in_progress_status: int,
         debug: bool = False,
     ) -> T.Tuple[str, datetime]:
+        """
+        :return: a tuple of ``(lock, lock_at)``.
+        """
         if isinstance(engine_or_session, sa.Engine):
             with orm.Session(engine_or_session) as ses:
                 return self._lock_it(
