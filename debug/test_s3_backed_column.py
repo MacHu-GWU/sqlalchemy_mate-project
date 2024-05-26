@@ -16,6 +16,7 @@ import sqlalchemy_mate.patterns.s3backed_column.api as s3backed_column
 from rich import print as rprint
 from rich.console import Console
 
+aws_s3 = s3backed_column.aws_s3
 console = Console()
 
 
@@ -50,43 +51,50 @@ s3dir_root.delete()  # clean up everything to ensure a fresh start
 
 url = "https://www.python.org"
 
+# ------ Create row ------
 console.rule("Create row", characters="=")
 html_content = b"<html>this is html 1</html>"
 image_content = b"this is image 1"
+html_additional_kwargs = dict(ContentType="text/html")
+image_additional_kwargs = dict(ContentType="image/jpeg")
 
 utc_now = get_utc_now()
-
-actions = s3backed_column.put_s3(
+put_s3_result = aws_s3.put_s3(
+    api_calls=[
+        aws_s3.PutS3ApiCall(
+            column="html",
+            binary=html_content,
+            old_s3_uri=None,
+            extra_put_object_kwargs=html_additional_kwargs,
+        ),
+        aws_s3.PutS3ApiCall(
+            column="image",
+            binary=image_content,
+            old_s3_uri=None,
+            extra_put_object_kwargs=image_additional_kwargs,
+        ),
+    ],
     s3_client=bsm.s3_client,
     pk=url,
-    kvs=dict(html=html_content, image=image_content),
     bucket=s3dir_root.bucket,
     prefix=s3dir_root.key,
     update_at=utc_now,
     is_pk_url_safe=False,
-    s3_put_object_kwargs=dict(
-        html=dict(ContentType="text/html"),
-        image=dict(ContentType="image/jpeg"),
-    ),
 )
 
-kwargs = {action.column: action.s3_uri for action in actions}
 with orm.Session(engine) as ses:
     try:
         with ses.begin():
             task1 = Task(
                 url=url,
                 update_at=utc_now,
-                **kwargs,
+                **put_s3_result.to_values(),
             )
             ses.add(task1)
         rprint("Succeeded!")
     except Exception as e:
         rprint("Failed!")
-        s3backed_column.clean_up_created_s3_object_when_create_row_failed(
-            s3_client=bsm.s3_client,
-            actions=actions,
-        )
+        put_s3_result.clean_up_created_s3_object_when_create_row_failed()
         raise
 
     console.rule("Row", characters="-")
@@ -95,44 +103,50 @@ with orm.Session(engine) as ses:
     rprint(f"{S3Path(task1.html).read_text() = }")
     rprint(f"{S3Path(task1.image).read_bytes() = }")
 
+# ------ Update row ------
 console.rule("Update row", characters="=")
 html_content = b"<html>this is html 2</html>"
 image_content = b"this is image 2"
 
 utc_now = get_utc_now()
 
-actions = s3backed_column.put_s3(
+put_s3_result = aws_s3.put_s3(
+    api_calls=[
+        aws_s3.PutS3ApiCall(
+            column="html",
+            binary=html_content,
+            old_s3_uri=task1.html,
+            extra_put_object_kwargs=html_additional_kwargs,
+        ),
+        aws_s3.PutS3ApiCall(
+            column="image",
+            binary=image_content,
+            old_s3_uri=task1.image,
+            extra_put_object_kwargs=image_additional_kwargs,
+        ),
+    ],
     s3_client=bsm.s3_client,
     pk=url,
-    kvs=dict(html=html_content, image=image_content),
     bucket=s3dir_root.bucket,
     prefix=s3dir_root.key,
     update_at=utc_now,
     is_pk_url_safe=False,
-    s3_put_object_kwargs=dict(
-        html=dict(ContentType="text/html"),
-        image=dict(ContentType="image/jpeg"),
-    ),
 )
 
-kwargs = {action.column: action.s3_uri for action in actions}
 with orm.Session(engine) as ses:
     try:
         with ses.begin():
-            stmt = sa.update(Task).where(Task.url == url).values(**kwargs)
+            stmt = (
+                sa.update(Task)
+                .where(Task.url == url)
+                .values(**put_s3_result.to_values())
+            )
             ses.execute(stmt)
-        s3backed_column.clean_up_old_s3_object_when_update_row_succeeded(
-            s3_client=bsm.s3_client,
-            actions=actions,
-            old_kvs=dict(html=task1.html, image=task1.image),
-        )
+        put_s3_result.clean_up_old_s3_object_when_update_row_succeeded()
         rprint("Succeeded!")
     except Exception as e:
         rprint("Failed!")
-        s3backed_column.clean_up_created_s3_object_when_update_row_failed(
-            s3_client=bsm.s3_client,
-            actions=actions,
-        )
+        put_s3_result.clean_up_created_s3_object_when_update_row_failed()
         raise e
 
     console.rule("Row", characters="-")
