@@ -1,109 +1,20 @@
 # -*- coding: utf-8 -*-
 
+"""
+Use local file system as the storage backend.
+"""
+
 import typing as T
 import os
 import dataclasses
-from datetime import datetime
 from pathlib import Path
 
-import botocore.exceptions
-from ...vendor.iterable import group_by
-from .helpers import get_md5, b64encode_str, encode_pk, T_PK
-from .storage import execute_write
-
-if T.TYPE_CHECKING:  # pragma: no cover
-    from mypy_boto3_s3.client import S3Client
+from .helpers import get_md5, encode_pk, T_PK, execute_write
 
 
 # ------------------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------------------
-# def split_s3_uri(s3_uri: str) -> T.Tuple[str, str]:
-#     """
-#     Split AWS S3 URI, returns bucket and key.
-#     """
-#     parts = s3_uri.split("/")
-#     bucket = parts[2]
-#     key = "/".join(parts[3:])
-#     return bucket, key
-#
-#
-# def join_s3_uri(bucket: str, key: str) -> str:
-#     """
-#     Join AWS S3 URI from bucket and key.
-#     """
-#     return "s3://{}/{}".format(bucket, key)
-#
-#
-# def is_s3_object_exists(
-#     s3_client: "S3Client",
-#     bucket: str,
-#     key: str,
-# ) -> bool:  # pragma: no cover
-#     try:
-#         s3_client.head_object(Bucket=bucket, Key=key)
-#         return True
-#     except botocore.exceptions.ClientError as e:
-#         if e.response["Error"]["Code"] == "404":
-#             return False
-#         else:  # pragma: no cover
-#             raise e
-#     except Exception as e:  # pragma: no cover
-#         raise e
-#
-#
-# def remove_s3_prefix(
-#     s3_client: "S3Client",
-#     bucket: str,
-#     prefix: str,
-# ):
-#     """
-#     Remove all objects with the same prefix in the bucket.
-#     """
-#     res = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix, MaxKeys=1000)
-#     for content in res.get("Contents", []):
-#         key = content["Key"]
-#         s3_client.delete_object(Bucket=bucket, Key=key)
-#
-#
-# def batch_delete_s3_objects(
-#     s3_client: "S3Client",
-#     s3_uri_list: T.List[str],
-# ):
-#     """
-#     Batch delete many S3 objects. If they share the same bucket, then use
-#     the ``s3_client.delete_objects`` method. If they do not share the same bucket,
-#     then use ``s3_client.delete_object`` method.
-#
-#     :param s3_client: ``boto3.client("s3")`` object.
-#     :param s3_uri_list: example: ["s3://bucket/key1", "s3://bucket/key2"].
-#     """
-#     buckets = list()
-#     keys = list()
-#     pairs = list()
-#     for s3_uri in s3_uri_list:
-#         bucket, key = split_s3_uri(s3_uri)
-#         pairs.append((bucket, key))
-#
-#         buckets.append(bucket)
-#         keys.append(key)
-#
-#     groups = group_by(pairs, get_key=lambda x: x[0])
-#     for bucket, bucket_key_pairs in groups.items():
-#         s3_client.delete_objects(
-#             Bucket=bucket,
-#             Delete=dict(Objects=[dict(Key=key) for _, key in bucket_key_pairs]),
-#         )
-#
-#
-# def normalize_s3_prefix(prefix: str) -> str:
-#     if prefix.startswith("/"):
-#         prefix = prefix[1:]
-#     elif prefix.endswith("/"):
-#         prefix = prefix[:-1]
-#     return prefix
-#
-#
 def get_path(
     pk: str,
     column: str,

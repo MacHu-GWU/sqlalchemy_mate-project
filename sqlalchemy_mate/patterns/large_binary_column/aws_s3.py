@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 
+"""
+Use Amazon S3 as the storage backend.
+"""
+
 import typing as T
 import dataclasses
 from datetime import datetime
 
 import botocore.exceptions
 from ...vendor.iterable import group_by
-from .helpers import get_md5, b64encode_str, encode_pk, T_PK
-from .storage import execute_write
+
+from .helpers import get_md5, encode_pk, T_PK, execute_write
 
 if T.TYPE_CHECKING:  # pragma: no cover
     from mypy_boto3_s3.client import S3Client
@@ -121,6 +125,18 @@ def get_s3_key(
 # ------------------------------------------------------------------------------
 @dataclasses.dataclass
 class PutS3BackedColumnResult:
+    """
+    The returned object of :func:`put_s3backed_column`.
+
+    :param column: which column is about to be created/updated.
+    :param old_s3_uri: the old S3 URI, if it is a "create", then it is None.
+    :param new_s3_uri:
+    :param executed:
+    :param cleanup_function:
+    :param cleanup_old_kwargs:
+    :param cleanup_new_kwargs:
+    """
+
     # fmt: off
     column: str = dataclasses.field()
     old_s3_uri: str = dataclasses.field()
@@ -144,6 +160,28 @@ def put_s3backed_column(
     is_pk_url_safe: bool = False,
     extra_put_object_kwargs: T.Optional[T.Dict[str, T.Any]] = None,
 ) -> PutS3BackedColumnResult:
+    """
+    Put the binary data of a column to S3.
+
+    :param column: which column is about to be created/updated.
+    :param binary: the binary data of the column to be written to S3.
+    :param old_s3_uri: if it is a "create row", then it is None.
+        if it is a "update row", then it is the old value of the column (could be None).
+    :param s3_client: ``boto3.client("s3")`` object.
+    :param pk: the primary key of the row. It is used to generate the S3 key.
+        it could be a single value or a tuple of values when primary key is a
+        compound key.
+    :param bucket: the S3 bucket name where you store the binary data.
+    :param prefix: the common prefix of the S3 key. the prefix and the pk together
+        will form the S3 key.
+    :param update_at: logical timestamp of the "create row" or "update row",
+        it will be written to the S3 object's metadata.
+    :param is_pk_url_safe: whether the primary key is URL safe or not. If the
+        primary key has special character, then you should set it to True.
+        Set to False only if you are sure that the primary key is URL safe.
+    :param extra_put_object_kwargs: additional custom keyword arguments for
+        ``s3_client.put_object()`` API.
+    """
     # check_exists_function
     url_safe_pk = encode_pk(pk=pk, is_pk_url_safe=is_pk_url_safe, delimiter="/")
     s3_key = get_s3_key(pk=url_safe_pk, column=column, binary=binary, prefix=prefix)
@@ -195,13 +233,19 @@ def put_s3backed_column(
     )
 
 
-def clean_up_created_s3_object_when_create_row_failed(
+def clean_up_created_s3_object_when_create_or_update_row_failed(
     s3_client: "S3Client",
     new_s3_uri: str,
     executed: bool,
 ):
     """
-    todo
+    After ``s3_client.put_object()``, we need to create / update the row.
+    If the create / update row failed, we may need to clean up the created S3 object.
+    to ensure data consistency between S3 and database.
+
+    :param s3_client: ``boto3.client("s3")`` object.
+    :param new_s3_uri: the new S3 URI.
+    :param executed: whether the ``s3_client.put_object()`` is executed.
     """
     if executed:
         bucket, key = split_s3_uri(new_s3_uri)
@@ -214,7 +258,12 @@ def clean_up_old_s3_object_when_update_row_succeeded(
     executed: bool,
 ):
     """
-    todo
+    Let's say after ``s3_client.put_object()``, we need to update the row.
+    If the update row failed, we may need to clean up the old S3 object.
+
+    :param s3_client: ``boto3.client("s3")`` object.
+    :param old_s3_uri: the old S3 URI.
+    :param executed: whether the ``s3_client.put_object()`` is executed.
     """
     if executed:
         if old_s3_uri:
@@ -222,24 +271,22 @@ def clean_up_old_s3_object_when_update_row_succeeded(
             s3_client.delete_object(Bucket=bucket, Key=key)
 
 
-def clean_up_created_s3_object_when_update_row_failed(
-    s3_client: "S3Client",
-    new_s3_uri: str,
-    executed: bool,
-):
-    """
-    todo
-    """
-    if executed:
-        bucket, key = split_s3_uri(new_s3_uri)
-        s3_client.delete_object(Bucket=bucket, Key=key)
-
-
 # ------------------------------------------------------------------------------
 # High Level API
 # ------------------------------------------------------------------------------
 @dataclasses.dataclass
 class PutS3ApiCall:
+    """
+    A data container of the arguments that will be used in ``s3_client.put_object()``.
+
+    :param column: which column is about to be created/updated.
+    :param binary: the binary data of the column to be written to S3.
+    :param old_s3_uri: if it is a "create row", then it is None.
+        if it is a "update row", then it is the old value of the column (could be None).
+    :param extra_put_object_kwargs: additional custom keyword arguments for
+        ``s3_client.put_object()`` API.
+    """
+
     # fmt: off
     column: str = dataclasses.field()
     binary: bytes = dataclasses.field()
@@ -250,13 +297,25 @@ class PutS3ApiCall:
 
 @dataclasses.dataclass
 class PutS3Result:
+    """
+    The returned object of :func:`put_s3_result`.
+    """
+
     s3_client: "S3Client" = dataclasses.field()
     put_s3backed_column_results: T.List[PutS3BackedColumnResult] = dataclasses.field()
 
     def to_values(self) -> T.Dict[str, str]:
+        """
+        Return a dictionary of column name and S3 uri that can be used in the
+        SQL ``UPDATE ... VALUES ...`` statement. The key is the column name,
+        and the value is the S3 URI.
+        """
         return {res.column: res.new_s3_uri for res in self.put_s3backed_column_results}
 
-    def clean_up_created_s3_object_when_create_row_failed(self):
+    def clean_up_created_s3_object_when_create_or_update_row_failed(self):
+        """
+        A wrapper of :func:`clean_up_created_s3_object_when_create_or_update_row_failed`.
+        """
         s3_uri_list = list()
         for res in self.put_s3backed_column_results:
             if res.executed:
@@ -264,18 +323,14 @@ class PutS3Result:
         batch_delete_s3_objects(s3_client=self.s3_client, s3_uri_list=s3_uri_list)
 
     def clean_up_old_s3_object_when_update_row_succeeded(self):
+        """
+        A wrapper of :func:`clean_up_old_s3_object_when_update_row_succeeded`.
+        """
         s3_uri_list = list()
         for res in self.put_s3backed_column_results:
             if res.executed:
                 if res.old_s3_uri:
                     s3_uri_list.append(res.old_s3_uri)
-        batch_delete_s3_objects(s3_client=self.s3_client, s3_uri_list=s3_uri_list)
-
-    def clean_up_created_s3_object_when_update_row_failed(self):
-        s3_uri_list = list()
-        for res in self.put_s3backed_column_results:
-            if res.executed:
-                s3_uri_list.append(res.new_s3_uri)
         batch_delete_s3_objects(s3_client=self.s3_client, s3_uri_list=s3_uri_list)
 
 
@@ -288,6 +343,24 @@ def put_s3(
     update_at: datetime,
     is_pk_url_safe: bool = False,
 ):
+    """
+    Put the binary data of a column to S3.
+
+    :param api_calls: a list of :class:`PutS3ApiCall` objects. It defines how to
+        put the binary data of multiple columns to S3.
+    :param s3_client: ``boto3.client("s3")`` object.
+    :param pk: the primary key of the row. It is used to generate the S3 key.
+        it could be a single value or a tuple of values when primary key is a
+        compound key.
+    :param bucket: the S3 bucket name where you store the binary data.
+    :param prefix: the common prefix of the S3 key. the prefix and the pk together
+        will form the S3 key.
+    :param update_at: logical timestamp of the "create row" or "update row",
+        it will be written to the S3 object's metadata.
+    :param is_pk_url_safe: whether the primary key is URL safe or not. If the
+        primary key has special character, then you should set it to True.
+        Set to False only if you are sure that the primary key is URL safe.
+    """
     put_s3backed_column_results = list()
     for api_call in api_calls:
         put_s3backed_column_result = put_s3backed_column(

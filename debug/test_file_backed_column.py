@@ -12,11 +12,11 @@ from pathlib import Path
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 import sqlalchemy_mate.api as sam
-import sqlalchemy_mate.patterns.s3backed_column.api as s3backed_column
+import sqlalchemy_mate.patterns.large_binary_column.api as large_binary_column
 from rich import print as rprint
 from rich.console import Console
 
-local = s3backed_column.local
+local = large_binary_column.local
 console = Console()
 
 

@@ -63,7 +63,7 @@ def execute_write(
     else:
         exists = check_exists_function(**check_exists_kwargs)
     if exists:
-        return True
+        return False
     else:
         write_function(**write_kwargs)
-        return False
+        return True
