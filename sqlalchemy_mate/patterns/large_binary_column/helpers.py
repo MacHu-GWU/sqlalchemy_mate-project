@@ -62,8 +62,7 @@ def execute_write(
         exists = False
     else:
         exists = check_exists_function(**check_exists_kwargs)
-    if exists:
-        return False
-    else:
-        write_function(**write_kwargs)
-        return True
+        if exists is False:
+            write_function(**write_kwargs)
+    executed = not exists
+    return executed

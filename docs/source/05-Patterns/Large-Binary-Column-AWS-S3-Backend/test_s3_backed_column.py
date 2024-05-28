@@ -21,6 +21,7 @@ In this comprehensive example, we aim to demonstrate the complete lifecycle mana
 By leveraging the capabilities of sqlalchemy_mate, developers can build scalable and efficient systems that handle large binary data with ease. The module's Pythonic interface, flexibility in storage backends, and extensibility make it a powerful tool for managing the lifecycle of large binary objects while ensuring data consistency and integrity.
 """
 
+import typing as T
 from datetime import datetime
 
 from s3pathlib import S3Path, context
@@ -49,10 +50,10 @@ Base = orm.declarative_base()
 class Task(Base):
     __tablename__ = "tasks"
 
-    url = orm.mapped_column(sa.String, primary_key=True)
-    update_at = orm.mapped_column(sa.DateTime)
-    html = orm.mapped_column(sa.String, nullable=True)
-    image = orm.mapped_column(sa.String, nullable=True)
+    url: orm.Mapped[str] = orm.mapped_column(sa.String, primary_key=True)
+    update_at: orm.Mapped[datetime] = orm.mapped_column(sa.DateTime)
+    html: orm.Mapped[T.Optional[str]] = orm.mapped_column(sa.String, nullable=True)
+    image: orm.Mapped[T.Optional[str]] = orm.mapped_column(sa.String, nullable=True)
 
 
 engine = sa.create_engine("sqlite:///:memory:")

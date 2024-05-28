@@ -54,20 +54,6 @@ def is_s3_object_exists(
         raise e
 
 
-def remove_s3_prefix(
-    s3_client: "S3Client",
-    bucket: str,
-    prefix: str,
-):
-    """
-    Remove all objects with the same prefix in the bucket.
-    """
-    res = s3_client.list_objects_v2(Bucket=bucket, Prefix=prefix, MaxKeys=1000)
-    for content in res.get("Contents", []):
-        key = content["Key"]
-        s3_client.delete_object(Bucket=bucket, Key=key)
-
-
 def batch_delete_s3_objects(
     s3_client: "S3Client",
     s3_uri_list: T.List[str],
@@ -99,7 +85,7 @@ def batch_delete_s3_objects(
 
 
 def normalize_s3_prefix(prefix: str) -> str:
-    if prefix.startswith("/"):
+    if prefix.startswith("/"):  # pragma: no cover
         prefix = prefix[1:]
     elif prefix.endswith("/"):
         prefix = prefix[:-1]
@@ -193,7 +179,7 @@ def put_s3backed_column(
         key=s3_key,
     )
     # write_function
-    if extra_put_object_kwargs is None:
+    if extra_put_object_kwargs is None:  # pragma: no cover
         extra_put_object_kwargs = dict()
     metadata = {"update_at": update_at.isoformat()}
     try:
@@ -237,7 +223,7 @@ def clean_up_created_s3_object_when_create_or_update_row_failed(
     s3_client: "S3Client",
     new_s3_uri: str,
     executed: bool,
-):
+):  # pragma: no cover
     """
     After ``s3_client.put_object()``, we need to create / update the row.
     If the create / update row failed, we may need to clean up the created S3 object.
@@ -256,7 +242,7 @@ def clean_up_old_s3_object_when_update_row_succeeded(
     s3_client: "S3Client",
     old_s3_uri: T.Optional[str],
     executed: bool,
-):
+):  # pragma: no cover
     """
     Let's say after ``s3_client.put_object()``, we need to update the row.
     If the update row failed, we may need to clean up the old S3 object.

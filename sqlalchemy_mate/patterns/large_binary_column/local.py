@@ -106,7 +106,7 @@ def write_file_backed_column(
     )
 
 
-def clean_up_new_file_when_create_row_failed(
+def clean_up_new_file_when_create_or_update_row_failed(
     new_path: Path,
     executed: bool,
 ):
@@ -127,17 +127,6 @@ def clean_up_old_file_when_update_row_succeeded(
     if executed:
         if old_path:
             old_path.unlink()
-
-
-def clean_up_new_file_when_update_row_failed(
-    new_path: Path,
-    executed: bool,
-):
-    """
-    todo
-    """
-    if executed:
-        new_path.unlink()
 
 
 # ------------------------------------------------------------------------------
@@ -165,9 +154,9 @@ class WriteFileResult:
             for res in self.write_file_backed_column_results
         }
 
-    def clean_up_new_file_when_create_row_failed(self):
+    def clean_up_new_file_when_create_or_update_row_failed(self):
         for res in self.write_file_backed_column_results:
-            clean_up_new_file_when_update_row_failed(
+            clean_up_new_file_when_create_or_update_row_failed(
                 new_path=res.new_path, executed=res.executed
             )
 
@@ -175,12 +164,6 @@ class WriteFileResult:
         for res in self.write_file_backed_column_results:
             clean_up_old_file_when_update_row_succeeded(
                 old_path=res.old_path, executed=res.executed
-            )
-
-    def clean_up_new_s3_object_when_update_row_failed(self):
-        for res in self.write_file_backed_column_results:
-            clean_up_new_file_when_update_row_failed(
-                new_path=res.new_path, executed=res.executed
             )
 
 
