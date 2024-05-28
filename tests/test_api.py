@@ -4,6 +4,7 @@
 def test():
     import sqlalchemy_mate.api as sam
 
+    # fmt: off
     _ = sam.selecting.count_row
     _ = sam.selecting.by_pk
     _ = sam.selecting.select_all
@@ -42,12 +43,8 @@ def test():
     _ = sam.patterns.large_binary_column.aws_s3
     _ = sam.patterns.large_binary_column.aws_s3.PutS3BackedColumnResult
     _ = sam.patterns.large_binary_column.aws_s3.put_s3backed_column
-    _ = (
-        sam.patterns.large_binary_column.aws_s3.clean_up_created_s3_object_when_create_or_update_row_failed
-    )
-    _ = (
-        sam.patterns.large_binary_column.aws_s3.clean_up_old_s3_object_when_update_row_succeeded
-    )
+    _ = sam.patterns.large_binary_column.aws_s3.clean_up_created_s3_object_when_create_or_update_row_failed
+    _ = sam.patterns.large_binary_column.aws_s3.clean_up_old_s3_object_when_update_row_succeeded
     _ = sam.patterns.large_binary_column.aws_s3.PutS3ApiCall
     _ = sam.patterns.large_binary_column.aws_s3.PutS3Result
     _ = sam.patterns.large_binary_column.aws_s3.put_s3
@@ -55,15 +52,12 @@ def test():
     _ = sam.patterns.large_binary_column.local
     _ = sam.patterns.large_binary_column.local.WriteFileBackedColumnResult
     _ = sam.patterns.large_binary_column.local.write_file_backed_column
-    _ = (
-        sam.patterns.large_binary_column.local.clean_up_new_file_when_create_or_update_row_failed
-    )
-    _ = (
-        sam.patterns.large_binary_column.local.clean_up_old_file_when_update_row_succeeded
-    )
+    _ = sam.patterns.large_binary_column.local.clean_up_new_file_when_create_or_update_row_failed
+    _ = sam.patterns.large_binary_column.local.clean_up_old_file_when_update_row_succeeded
     _ = sam.patterns.large_binary_column.local.WriteFileApiCall
     _ = sam.patterns.large_binary_column.local.WriteFileResult
     _ = sam.patterns.large_binary_column.local.write_file
+    # fmt: on
 
 
 if __name__ == "__main__":

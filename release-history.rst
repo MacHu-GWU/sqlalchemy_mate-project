@@ -15,6 +15,34 @@ Backlog (TODO)
 **Miscellaneous**
 
 
+2.0.0.2 (2024-05-28)
+------------------------------------------------------------------------------
+**Features and Improvements**
+
+- Add "Large binary column" pattern, support local file and Amazon S3 backend.
+- Add the following public API
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.aws_s3``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.aws_s3.PutS3BackedColumnResult``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.aws_s3.put_s3backed_column``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.aws_s3.clean_up_created_s3_object_when_create_or_update_row_failed``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.aws_s3.clean_up_old_s3_object_when_update_row_succeeded``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.aws_s3.PutS3ApiCall``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.aws_s3.PutS3Result``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.aws_s3.put_s3``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.local``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.local.WriteFileBackedColumnResult``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.local.write_file_backed_column``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.local.clean_up_new_file_when_create_or_update_row_failed``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.local.clean_up_old_file_when_update_row_succeeded``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.local.WriteFileApiCall``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.local.WriteFileResult``
+    - ``sqlalchemy_mate.api.patterns.large_binary_column.local.write_file``
+
+**Minor Improvements**
+
+- Use jupyter notebook to generate documentation.
+
+
 2.0.0.1 (2024-05-17)
 ------------------------------------------------------------------------------
 **💥Breaking Change**
