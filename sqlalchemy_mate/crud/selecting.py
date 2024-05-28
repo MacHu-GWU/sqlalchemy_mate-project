@@ -76,9 +76,8 @@ def by_pk(
         else:
             if len(table.primary_key) != 1:
                 raise ValueError
-            return connection.execute(
-                sa.select(table).where(list(table.primary_key)[0] == id_)
-            ).fetchone()
+            stmt = sa.select(table).where(list(table.primary_key)[0] == id_)
+            return connection.execute(stmt).fetchone()
 
 
 def select_all(

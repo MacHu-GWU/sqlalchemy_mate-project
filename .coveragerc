@@ -7,6 +7,7 @@ omit =
     sqlalchemy_mate/docs/*
     sqlalchemy_mate/tests/*
     sqlalchemy_mate/vendor/*
+    sqlalchemy_mate/patterns/large_binary_column/local.py
 
 [report]
 # Regexes for lines to exclude from consideration

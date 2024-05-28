@@ -12,7 +12,7 @@ from copy import deepcopy
 from sqlalchemy import inspect, func, text, select, update, Column
 from sqlalchemy.sql.expression import TextClause
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import declarative_base, Session, InstrumentedAttribute
+from sqlalchemy.orm import declarative_base, Session, InstrumentedAttribute, MappedColumn
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import FlushError
 
@@ -224,6 +224,8 @@ class ExtendedBase(Base):
             l = list()
             for item in cls._settings_major_attrs:
                 if isinstance(item, Column):
+                    l.append(item.name)
+                elif isinstance(item, MappedColumn):
                     l.append(item.name)
                 elif isinstance(item, str):
                     l.append(item)

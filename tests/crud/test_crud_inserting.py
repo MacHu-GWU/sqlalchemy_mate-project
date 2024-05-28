@@ -91,7 +91,7 @@ class InsertingApiBaseTest(BaseCrudTest):
         # ------ After State ------
         assert elapse1 < elapse2
 
-    def _test_smart_insert_single_row(self):
+    def test_smart_insert_single_row(self):
         assert count_row(self.engine, t_smart_insert) == 0
 
         data = {"id": 1}

@@ -63,6 +63,7 @@ class JSONSerializableBaseTest:
     def test_read_and_write(self):
         with orm.Session(self.engine) as ses:
             user = ses.get(User, self.id_)
+            print(user.profile)
             assert isinstance(user.profile, Profile)
             assert user.profile.dob == self.profile.dob
 
