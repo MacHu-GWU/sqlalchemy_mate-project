@@ -5,6 +5,7 @@ Release v\ |release| (:ref:`What's new? <release_history>`).
 Table of Content
 ------------------------------------------------------------------------------
 .. autotoctree::
+    :maxdepth: 2
 
 .. include:: ../../AUTHORS.rst
 
