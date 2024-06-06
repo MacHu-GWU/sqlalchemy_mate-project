@@ -15,6 +15,23 @@ Backlog (TODO)
 **Miscellaneous**
 
 
+2.0.0.3 (2024-06-06)
+------------------------------------------------------------------------------
+**💥Breaking Change**
+
+- Rename ``in_process_status`` argument to ``in_progress_status``, rename ``success_status`` to ``succeeded_status``, rename ``ignore_status`` to ``ignored_status`` in :meth:`sqlalchemy_mate.patterns.status_tracker.impl.JobMixin.start`.
+
+**Features and Improvements**
+
+- Add ``pending_status`` and ``more_pending_status`` argument to :meth:`sqlalchemy_mate.patterns.status_tracker.impl.JobMixin.start`. Rename ``in_process_status`` argument to ``in_progress_status``, rename ``success_status`` to ``succeeded_status``, rename ``ignore_status`` to ``ignored_status``.
+
+**Minor Improvements**
+
+**Bugfixes**
+
+**Miscellaneous**
+
+
 2.0.0.2 (2024-05-28)
 ------------------------------------------------------------------------------
 **Features and Improvements**

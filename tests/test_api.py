@@ -35,7 +35,10 @@ def test():
     _ = sam.pt.from_dict_list
     _ = sam.pt.from_everything
 
+    _ = sam.patterns.status_tracker.JobExecutionError
     _ = sam.patterns.status_tracker.JobLockedError
+    _ = sam.patterns.status_tracker.JobIsNotReadyToStartError
+    _ = sam.patterns.status_tracker.JobAlreadySucceededError
     _ = sam.patterns.status_tracker.JobIgnoredError
     _ = sam.patterns.status_tracker.JobMixin
     _ = sam.patterns.status_tracker.Updates

@@ -35,10 +35,10 @@ class Job(Base, ExtendedBase, JobMixin):
         return cls.start(
             engine=engine,
             id=id,
-            in_process_status=StatusEnum.in_progress.value,
+            in_progress_status=StatusEnum.in_progress.value,
             failed_status=StatusEnum.failed.value,
-            success_status=StatusEnum.succeeded.value,
-            ignore_status=StatusEnum.ignored.value,
+            succeeded_status=StatusEnum.succeeded.value,
+            ignored_status=StatusEnum.ignored.value,
             expire=15,
             max_retry=3,
             skip_error=skip_error,

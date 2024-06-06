@@ -5,7 +5,7 @@ import uuid
 import traceback
 import dataclasses
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
@@ -14,7 +14,11 @@ import sqlalchemy.orm as orm
 EPOCH = datetime(1970, 1, 1)
 
 
-class JobLockedError(Exception):
+class JobExecutionError(Exception):
+    pass
+
+
+class JobLockedError(JobExecutionError):
     """
     Raised when try to start a locked job.
     """
@@ -22,9 +26,26 @@ class JobLockedError(Exception):
     pass
 
 
-class JobIgnoredError(Exception):
+class JobIsNotReadyToStartError(JobExecutionError):
     """
-    Raised when try to start a ignored (failed too many times) job.
+    Raised when try to start job that the current status shows that it is not
+    ready to start.
+    """
+
+    pass
+
+
+class JobAlreadySucceededError(JobIsNotReadyToStartError):
+    """
+    Raised when try to start a succeeded (failed too many times) job.
+    """
+
+    pass
+
+
+class JobIgnoredError(JobIsNotReadyToStartError):
+    """
+    Raised when try to start an ignored (failed too many times) job.
     """
 
     pass
@@ -56,8 +77,15 @@ class JobMixin:
         进行加锁操作. 如果在 #1 之后, #3 之前有人把这个 Job 锁上了, 这个 SQL 就不会执行成功,
         我们也就视为获取锁失败.
 
-    注, 这里我们故意没有用 ``SELECT ... WHERE ... FOR UPDATE`` 的行锁语法, 因为我们
+    注 1, 这里我们故意没有用 ``SELECT ... WHERE ... FOR UPDATE`` 的行锁语法, 因为我们
     需要显式的维护这个锁的开关和生命周期.
+
+    注 2, 我们是先获得这个 job, 检查是否上锁, 然后再 update 上锁. 你可能会担心在检查成功后
+    到 update 上锁期间如果有其他人把这个锁锁上了怎么办? 这个问题是不存在的, 因为 update 里的
+    where 会保证如果尝试上锁的时候已经被上锁了, 这个 update 会失败. 再一个你可能会问为什么不
+    先 update 上锁, 再获取 job. 因为我们希望当这个 job 已经被上锁时, 其他的并发 worker 能够
+    用最小的代价了解到这个 job 已经被上锁了. 而明显 get 的代价比 update 要小得多, 所以
+    优先用 get 来获得 job 检查锁的状态.
     """
 
     # fmt: off
@@ -191,7 +219,8 @@ class JobMixin:
             self.lock_at = utc_now
             if debug:  # pragma: no cover
                 print("  Successfully lock the job!")
-        else:
+        # if someone else locked the job before us, we will enter this branch
+        else:  # pragma: no cover
             if debug:  # pragma: no cover
                 print("  Failed to lock the job")
             raise JobLockedError(f"Job {self.id!r}")
@@ -248,12 +277,15 @@ class JobMixin:
         cls,
         engine: sa.Engine,
         id: str,
-        in_process_status: int,
+        pending_status: int,
+        in_progress_status: int,
         failed_status: int,
-        success_status: int,
-        ignore_status: int,
+        succeeded_status: int,
+        ignored_status: int,
         expire: int,
         max_retry: int,
+        more_pending_status: T.Optional[T.Union[int, T.List[int]]] = None,
+        traceback_stack_limit: int = 10,
         skip_error: bool = False,
         debug: bool = False,
     ) -> T.ContextManager[T.Tuple["T_JOB", "Updates"]]:
@@ -273,6 +305,7 @@ class JobMixin:
             with Job.start(
                 engine=engine,
                 id="job-1",
+                pending_status=10,
                 in_process_status=20,
                 failed_status=30,
                 success_status=40,
@@ -290,6 +323,26 @@ class JobMixin:
 
         :param engine: SQLAlchemy engine. A life-cycle of a job has to be done
             in a new session.
+        :param id: unique job id, usually the primary key of the job table.
+            todo, add support to allow compound primary key.
+        :param pending_status: pending status code in integer.
+        :param in_progress_status: in_progress status code in integer.
+        :param failed_status: failed status code in integer.
+        :param succeeded_status: succeeded status code in integer.
+        :param ignored_status: ignored status code in integer.
+        :param more_pending_status: additional pending status code that logically
+            equal to "pending" status.
+        :param max_retry: how many retry is allowed before we ignore it
+        :param expire: how long the lock will expire
+        :param skip_error: if True, ignore the error during the job execution logics.
+            note that this flag won't ignore the error during the context manager
+            start up and clean up. For example, it won't ignore the :class:`JobLockedError`.
+        :param debug: if True, print debug message.
+
+        注: 这里的设计跟 pynamodb_mate 中的 status tracker 模块不同. 这里没有
+        detailed_error 这个参数. 这是因为在 sql 中我们会先 get job 再 update 获取锁, 所以
+        在获取锁失败时我们无需再次查询数据库来了解错误原因. 而 dynamodb 是先 update 获取锁,
+        出错后如需了解详细的错误原因需要一次额外的 get 操作.
         """
         if debug:  # pragma: no cover
             print("{msg:-^80}".format(msg=(f" ▶️ start Job {id!r}")))
@@ -297,29 +350,62 @@ class JobMixin:
         updates = Updates()
 
         with orm.Session(engine) as ses:
-            job = ses.get(cls, id)
+            job: T.Optional["T_JOB"] = ses.get(cls, id)
             if job is None:  # pragma: no cover
                 raise ValueError
 
             if job.is_locked(expire=expire):
                 if debug:  # pragma: no cover
-                    print(f"Job {id!r} is locked.")
+                    print(f"❌ Job {id!r} is locked.")
                 raise JobLockedError(f"Job {id!r} is locked.")
 
-            if job.status == ignore_status:
-                if debug:  # pragma: no cover
-                    print(f"↪️ the job is ignored, do nothing!")
-                raise JobIgnoredError(
-                    f"Job {id!r} retry count already exceeded {max_retry}, "
-                    f"ignore it."
-                )
+            ready_to_start_status = [
+                pending_status,
+                failed_status,
+            ]
+            if more_pending_status is None:
+                pass
+            elif isinstance(more_pending_status, int):
+                ready_to_start_status.append(more_pending_status)
+            else:
+                ready_to_start_status.extend(more_pending_status)
 
-            lock, lock_at = job.lock_it(
+            if job.status not in ready_to_start_status:
+                if job.status == succeeded_status:
+                    if debug:  # pragma: no cover
+                        print(f"❌ Job {id!r} is already succeeded, do nothing.")
+                    raise JobAlreadySucceededError(
+                        f"Job {id!r} is already succeeded, do nothing."
+                    )
+                elif job.status == ignored_status:
+                    if debug:  # pragma: no cover
+                        print(f"❌ Job {id!r} is ignored, do nothing.")
+                    raise JobIgnoredError(
+                        f"Job {id!r} retry count already exceeded {max_retry}, "
+                        f"ignore it."
+                    )
+                elif job.status not in ready_to_start_status:
+                    if debug:  # pragma: no cover
+                        print(
+                            f"❌ Job {id!r} status is {job.status}, "
+                            f"it is not any of the ready-to-start status: {ready_to_start_status}."
+                        )
+                    raise JobIsNotReadyToStartError(
+                        f"Job {id!r} status is {job.status}, "
+                        f"it is not any of the ready-to-start status: {ready_to_start_status}."
+                    )
+                else:
+                    raise NotImplementedError(
+                        f"You found a bug! This error should be handled but not implemented yet, "
+                        f"please report to https://github.com/MacHu-GWU/sqlalchemy_mate-project/issues;"
+                    )
+
+            _, _ = job.lock_it(
                 engine_or_session=ses,
-                in_progress_status=in_process_status,
+                in_progress_status=in_progress_status,
                 debug=debug,
             )
-            updates.values["status"] = in_process_status
+            updates.values["status"] = in_progress_status
 
             try:
                 # print("before yield")
@@ -328,9 +414,9 @@ class JobMixin:
                 if debug:  # pragma: no cover
                     print(
                         f"✅ 🔐 job succeeded, "
-                        f"set status = {success_status} and unlock the job."
+                        f"set status = {succeeded_status} and unlock the job."
                     )
-                updates.values["status"] = success_status
+                updates.values["status"] = succeeded_status
                 updates.values["update_at"] = datetime.utcnow()
                 updates.values["lock"] = None
                 updates.values["retry"] = 0
@@ -342,9 +428,9 @@ class JobMixin:
                     if debug:  # pragma: no cover
                         print(
                             f"❌ 🔐 job failed {max_retry} times already, "
-                            f"set status = {ignore_status} and unlock the job."
+                            f"set status = {ignored_status} and unlock the job."
                         )
-                    failed_updates.values["status"] = ignore_status
+                    failed_updates.values["status"] = ignored_status
                 else:
                     if debug:  # pragma: no cover
                         print(
@@ -356,7 +442,7 @@ class JobMixin:
                 failed_updates.values["lock"] = None
                 failed_updates.values["errors"] = {
                     "error": repr(e),
-                    "traceback": traceback.format_exc(limit=10),
+                    "traceback": traceback.format_exc(limit=traceback_stack_limit),
                 }
                 failed_updates.values["retry"] = job.retry + 1
                 job.update(engine_or_session=ses, updates=failed_updates)
